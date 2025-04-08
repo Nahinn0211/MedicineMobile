@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "399426343846",
+    "firebase_url": "https://medicine-6554e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "medicine-6554e",
+    "storage_bucket": "medicine-6554e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:399426343846:android:0653ac28431d8fac537567",
+        "android_client_info": {
+          "package_name": "com.example.medical_storage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkLSVHu3n_0FCEAhc9q3TYqNz5V7dCzj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
