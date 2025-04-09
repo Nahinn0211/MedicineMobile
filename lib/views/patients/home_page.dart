@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
             Image(image: AssetImage("assets/images/logo.png")),
             SizedBox(height: 40),
             NewMedicinesWidget(),
-            // BestSellingMedicinesWidget(bestSellingMedicines: [], medialist: []),
+            BestSellingMedicines(),
             ServiceSectionWidget(),
             FooterWidget(),
           ],

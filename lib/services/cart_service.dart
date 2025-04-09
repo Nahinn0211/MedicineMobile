@@ -127,7 +127,7 @@ class CartService extends ChangeNotifier {
   }
 
   Future<String> fetchMedicineImage(String medicineId) async {
-     const String baseUrl = 'http://192.168.1.248:8080/api';
+     const String baseUrl = 'http://192.168.1.249:8080/api';
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/medicines/$medicineId'),

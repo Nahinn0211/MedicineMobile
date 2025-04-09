@@ -18,7 +18,7 @@ class MedicineService extends BaseService<Medicine> {
   Future<List<Medicine>> getMedicineBestSaling() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/medicines/getMedicineBestSaling'),
+        Uri.parse('$baseUrl/medicines/best-selling'),
         headers: {
           'Content-Type': 'application/json',
         },
