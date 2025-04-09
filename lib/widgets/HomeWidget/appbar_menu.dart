@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:medical_storage/services/auth_service.dart'; // Import AuthService
+import 'package:medical_storage/services/auth_service.dart';
 import 'package:medical_storage/views/menu_views/disease_views.dart';
 import 'package:medical_storage/views/menu_views/doctor_page.dart';
 import 'package:medical_storage/views/menu_views/health_supplements_page.dart';
 import 'package:medical_storage/views/menu_views/medicin.dart';
 
 class AppBarMenu extends StatefulWidget {
+  const AppBarMenu({Key? key}) : super(key: key);
+
   @override
   _AppBarMenuState createState() => _AppBarMenuState();
 }
@@ -21,13 +23,123 @@ class _AppBarMenuState extends State<AppBarMenu> {
   }
 
   Future<void> _checkLoginStatus() async {
-    bool isLoggedIn = await _authService.isLoggedIn();
-    print('Trạng thái đăng nhập : $isLoggedIn');
-    if(mounted) {
-      setState(() {
-        _isLoggedIn = isLoggedIn;
-      });
+    final isLoggedIn = await _authService.isLoggedIn();
+    debugPrint('Trạng thái đăng nhập: $isLoggedIn');
+    if (mounted) {
+      setState(() => _isLoggedIn = isLoggedIn);
     }
+  }
+
+  Widget _buildDrawerHeader() {
+    return DrawerHeader(
+      decoration: const BoxDecoration(color: Colors.blueAccent),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'THAVP Medicine',
+            style: TextStyle(color: Colors.white, fontSize: 24),
+          ),
+          const SizedBox(height: 20),
+          _buildAuthSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuthSection() {
+    return _isLoggedIn
+        ? _buildLoggedInView()
+        : _buildLoginRegisterButtons();
+  }
+
+  Widget _buildLoginRegisterButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildAuthButton('Đăng nhập', '/login'),
+        _buildAuthButton('Đăng ký', '/register'),
+      ],
+    );
+  }
+
+  Widget _buildAuthButton(String text, String route) {
+    return ElevatedButton(
+      onPressed: () => Navigator.pushNamed(context, route),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.blueAccent,
+        backgroundColor: Colors.white,
+      ),
+      child: Text(text),
+    );
+  }
+
+  Widget _buildLoggedInView() {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/profile'),
+      child: Row(
+        children: const [
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            child: Icon(Icons.person, color: Colors.blueAccent),
+          ),
+          SizedBox(width: 10),
+          Text(
+            'Tài khoản của tôi',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildMenuItems() {
+    return [
+      _buildMenuItem(
+        icon: Icons.medical_services,
+        title: 'Thuốc',
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MedicineListPage())
+        ),
+      ),
+      _buildMenuItem(
+        icon: Icons.medication_liquid,
+        title: 'Thực phẩm chức năng',
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HealthSupplementPage())
+        ),
+      ),
+      _buildMenuItem(
+        icon: Icons.sick,
+        title: 'Bệnh',
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => DiseasePage())
+        ),
+      ),
+      _buildMenuItem(
+        icon: Icons.account_box,
+        title: 'Bác sĩ',
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => DoctorPage())
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap
+  }) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      onTap: onTap,
+    );
   }
 
   @override
@@ -35,132 +147,22 @@ class _AppBarMenuState extends State<AppBarMenu> {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
-        children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blueAccent),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'THAVP Medicine',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-                SizedBox(height: 20),
-
-                // Chỉ hiển thị nút đăng nhập/đăng ký khi chưa đăng nhập
-                if (!_isLoggedIn)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/login');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.blueAccent,
-                          backgroundColor: Colors.white,
-                        ),
-                        child: Text('Đăng nhập'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/register');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.blueAccent,
-                          backgroundColor: Colors.white,
-                        ),
-                        child: Text('Đăng ký'),
-                      ),
-                    ],
-                  ),
-
-                // Hiển thị thông tin người dùng khi đã đăng nhập
-                if (_isLoggedIn)
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/profile');
-                    },
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.person, color: Colors.blueAccent),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Tài khoản của tôi',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ],
-                    ),
-
-                  ),
-                // TextButton(
-                //   child: Text('Đăng xuất'),
-                //   onPressed: () {
-                //     Navigator.of(context).pop();
-                //     AuthService().logout(context);
-                //   },
-                //   style: TextButton.styleFrom(
-                //     foregroundColor: Colors.white,
-                //     backgroundColor: Colors.redAccent,
-                //   ),
-                // ),
-              ],
-            ),
-          ),
-
-          // Các mục menu khác giữ nguyên
+        children: [
+          _buildDrawerHeader(),
+          ..._buildMenuItems(),
+          const Divider(),
           ListTile(
-            leading: Icon(Icons.notifications),
-            title: Text('Thông báo'),
+            leading: const Icon(Icons.notifications),
+            title: const Text('Thông báo'),
             onTap: () {},
           ),
           ListTile(
-            leading: Icon(Icons.medical_services),
-            title: Text('Thuốc'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>MedicineListPage()));
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.medication_liquid),
-            title: Text('Thực phẩm chức năng'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>HealthSupplementPage()));
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.personal_injury),
-            title: Text('Chăm sóc cá nhân'),
+            leading: const Icon(Icons.phone),
+            title: const Text('Hotline tư vấn: 1800 6928'),
             onTap: () {},
           ),
-          ListTile(
-            leading: Icon(Icons.sick),
-            title: Text('Bệnh'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>DiseasePage()));
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.account_box),
-            title: Text('Bác sĩ'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>DoctorPage()));
-            },
-          ),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.phone),
-            title: Text('Hotline tư vấn: 1800 6928'),
-            onTap: () {},
-          ),
-
         ],
       ),
     );
   }
-
-
 }
