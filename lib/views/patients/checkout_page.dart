@@ -2,11 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:medical_storage/views/patients/payment_method_page.dart';
-
-import '../../models/discount.dart';
+import '../../models/voucher.dart'; // Đổi từ discount.dart sang voucher.dart
 import '../../services/cart_service.dart';
 import 'add_address_page.dart';
-import 'discount_page.dart';
+import 'voucher_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -24,34 +23,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Map<String, String>? _selectedAddress;
 
-  Discount? _selectedDiscount;
-  String? _selectedDiscountCode;
+  Voucher? _selectedVoucher;
+  String? _selectedVoucherCode;
   double _discountAmount = 0;
 
   String _selectedDeliveryMethod = "Giao hàng tận nơi";
 
-
   final TextEditingController _noteController = TextEditingController();
 
   double _calculateTotal() {
-    return widget.cartItems.fold(0, (sum, item) => sum + (item.totalPrice * item.quantity));
+    return widget.cartItems.fold(0, (sum, item) => sum + (item.totalPrice));
   }
 
-  void _showDiscountPage() async {
-    final Discount? selectedDiscount = await Navigator.push(
+  void _showVoucherPage() async {
+    final Voucher? selectedVoucher = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => DiscountPage()),
+      MaterialPageRoute(builder: (context) => VoucherPage()),
     );
 
-    if (selectedDiscount != null) {
+    if (selectedVoucher != null) {
       setState(() {
-        _selectedDiscount = selectedDiscount;
-
+        _selectedVoucher = selectedVoucher;
 
         double totalAmount = _calculateTotal();
-        _discountAmount = totalAmount * (selectedDiscount.discountPercentage / 100);
+        _discountAmount = totalAmount * (selectedVoucher.voucherPercentage / 100);
 
-        _selectedDiscountCode = selectedDiscount.code;
+        _selectedVoucherCode = selectedVoucher.code;
       });
     }
   }
@@ -64,7 +61,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setModalState) {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -73,7 +70,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   Text("Chọn hình thức giao hàng",
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   SizedBox(height: 16),
-
                   ListTile(
                     leading: Icon(Icons.delivery_dining, color: Colors.blue),
                     title: Text("Giao hàng tận nơi"),
@@ -82,7 +78,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ? Icon(Icons.check_circle, color: Colors.blue)
                         : null,
                     onTap: () {
-                      setState(() {
+                      setModalState(() {
                         _selectedDeliveryMethod = "Giao hàng tận nơi";
                       });
                     },
@@ -96,16 +92,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         ? Icon(Icons.check_circle, color: Colors.blue)
                         : null,
                     onTap: () {
-                      setState(() {
+                      setModalState(() {
                         _selectedDeliveryMethod = "Nhận tại nhà thuốc";
                       });
                     },
                   ),
                   SizedBox(height: 16),
-
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {}); // Cập nhật UI
+                      setState(() {}); // Cập nhật UI khi chọn xong
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
@@ -121,9 +116,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           },
         );
       },
-    ).then((_) {
-      setState(() {});
-    });
+    ).then((_) => setState(() {}));
   }
 
   @override
@@ -190,7 +183,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 context,
                 MaterialPageRoute(builder: (context) => AddAddressPage(existingAddress: _selectedAddress)),
               );
-
               if (newAddress != null) {
                 setState(() {
                   _selectedAddress = newAddress;
@@ -199,7 +191,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
             child: Text(_selectedAddress == null ? "Thêm địa chỉ" : "Thay đổi địa chỉ"),
           ),
-
           if (_selectedAddress != null) ...[
             SizedBox(height: 8),
             Text("Người nhận: ${_selectedAddress!['name']}"),
@@ -237,7 +228,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       children: [
         Text("Danh sách sản phẩm", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-
         ...widget.cartItems.map((item) => Card(
           child: ListTile(
             leading: Image.network(
@@ -255,105 +245,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("${_formatCurrency(item.totalPrice)}đ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
                 Text("${_formatCurrency(item.attribute.priceOut)}đ", style: TextStyle(fontSize: 14, decoration: TextDecoration.lineThrough, color: Colors.grey)),
-                Text("x${item.quantity} ${item.totalPrice}"),
+                Text("${_formatCurrency(item.attribute.priceOut)}đ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                Text("x${item.quantity}", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
               ],
             ),
-            trailing: Text("${_formatCurrency(item.attribute.priceOut * item.quantity)}đ", style: TextStyle(fontWeight: FontWeight.bold)),
+            trailing: Text("${_formatCurrency(item.attribute.priceOut * item.quantity)}đ", style: TextStyle(fontSize: 17,fontWeight: FontWeight.bold)),
           ),
-        )).toList(),
-
+        )),
         SizedBox(height: 12),
-        _buildDiscountSection(),
+        _buildVoucherSection(),
         SizedBox(height: 12),
         _buildPaymentSummary(),
       ],
     );
   }
 
-  Widget _buildTotalAmount() {
-    // Tính toán tổng tiền và áp dụng giảm giá (nếu có)
-    double totalAmount = _calculateTotal();
-    double finalAmount = max(0, totalAmount - _discountAmount);
-
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text("Tổng cộng:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text("${_formatCurrency(finalAmount)}đ",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCheckoutButton(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        // Kiểm tra địa chỉ giao hàng nếu chọn giao hàng tận nơi
-        if (_selectedDeliveryMethod == "Giao hàng tận nơi" && _selectedAddress == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Vui lòng thêm địa chỉ giao hàng"),
-            duration: Duration(seconds: 2),
-          ));
-          return;
-        }
-
-        double totalAmount = _calculateTotal();
-        double finalAmount = max(0, totalAmount - _discountAmount);
-
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => PaymentMethodPage(
-                  cartItems: widget.cartItems,
-                  totalAmount: finalAmount,
-                  discountAmount: _discountAmount,
-                  address: _selectedAddress,
-                  deliveryMethod: _selectedDeliveryMethod,
-                  note: _noteController.text,
-                  discount: _selectedDiscount,
-                )
-            )
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        minimumSize: Size(double.infinity, 48),
-      ),
-      child: Text("Thanh toán", style: TextStyle(fontSize: 18, color: Colors.white)),
-    );
-  }
-
-  Widget _buildDiscountSection() {
+  Widget _buildVoucherSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.percent, color: Colors.blue),
-              SizedBox(width: 8),
-              Expanded(child: Text("Giảm ngay 20% áp dụng đến 16/03", style: TextStyle(color: Colors.blue))),
-            ],
-          ),
-        ),
-        SizedBox(height: 8),
         InkWell(
-          onTap: _showDiscountPage,
+          onTap: _showVoucherPage,
           child: Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -363,10 +276,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Hiển thị mã giảm giá nếu đã chọn, nếu không thì hiển thị text mặc định
                 Text(
-                    _selectedDiscountCode != null
-                        ? "Mã giảm giá: $_selectedDiscountCode"
+                    _selectedVoucherCode != null
+                        ? "Mã ưu đãi: $_selectedVoucherCode"
                         : "Áp dụng ưu đãi để được giảm giá",
                     style: TextStyle(fontSize: 16)
                 ),
@@ -375,9 +287,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
         ),
-
-        // Hiển thị thông tin chi tiết về mã giảm giá nếu đã chọn
-        if (_selectedDiscount != null)
+        if (_selectedVoucher != null)
           Container(
             margin: EdgeInsets.only(top: 8),
             padding: EdgeInsets.all(12),
@@ -393,22 +303,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                          _selectedDiscount!.name,
-                          style: TextStyle(fontWeight: FontWeight.bold)
-                      ),
-                      Text(
-                          "Giảm ${_selectedDiscount!.discountPercentage.toStringAsFixed(0)}% - Tiết kiệm ${_formatCurrency(_discountAmount)}đ",
-                          style: TextStyle(color: Colors.green)
-                      ),
+                      Text(_selectedVoucher!.code, style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text("Giảm ${_selectedVoucher!.voucherPercentage.toDouble().toStringAsFixed(0)}% - Tiết kiệm ${_formatCurrency(_discountAmount)}đ", style: TextStyle(color: Colors.green)),
                     ],
                   ),
                 ),
                 InkWell(
                   onTap: () {
                     setState(() {
-                      _selectedDiscount = null;
-                      _selectedDiscountCode = null;
+                      _selectedVoucher = null;
+                      _selectedVoucherCode = null;
                       _discountAmount = 0;
                     });
                   },
@@ -423,7 +327,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Widget _buildPaymentSummary() {
     double totalAmount = _calculateTotal();
-    double finalAmount = max(0, totalAmount - _discountAmount); // Đảm bảo không âm
+    double finalAmount = max(0, totalAmount - _discountAmount);
 
     return Container(
       padding: EdgeInsets.all(12),
@@ -441,6 +345,64 @@ class _CheckoutPageState extends State<CheckoutPage> {
           _buildSummaryRow("Thành tiền", _formatCurrency(finalAmount), fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
         ],
       ),
+    );
+  }
+
+  Widget _buildTotalAmount() {
+    double totalAmount = _calculateTotal();
+    double finalAmount = max(0, totalAmount - _discountAmount);
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text("Tổng cộng:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text("${_formatCurrency(finalAmount)}đ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckoutButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        if (_selectedDeliveryMethod == "Giao hàng tận nơi" && _selectedAddress == null) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("Vui lòng thêm địa chỉ giao hàng"),
+            duration: Duration(seconds: 2),
+          ));
+          return;
+        }
+
+        double totalAmount = _calculateTotal();
+        double finalAmount = max(0, totalAmount - _discountAmount);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentMethodPage(
+              cartItems: widget.cartItems,
+              totalAmount: finalAmount,
+              discountAmount: _discountAmount,
+              address: _selectedAddress,
+              deliveryMethod: _selectedDeliveryMethod,
+              note: _noteController.text,
+              voucher: _selectedVoucher, // truyền voucher
+            ),
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        minimumSize: Size(double.infinity, 48),
+      ),
+      child: Text("Thanh toán", style: TextStyle(fontSize: 18, color: Colors.white)),
     );
   }
 

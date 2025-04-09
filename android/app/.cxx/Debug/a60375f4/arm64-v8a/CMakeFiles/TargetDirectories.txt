@@ -1,0 +1,2 @@
+E:/CodeAndroi/ProjectAptechFinal/MedicineMobile/android/app/.cxx/Debug/a60375f4/arm64-v8a/CMakeFiles/edit_cache.dir
+E:/CodeAndroi/ProjectAptechFinal/MedicineMobile/android/app/.cxx/Debug/a60375f4/arm64-v8a/CMakeFiles/rebuild_cache.dir
