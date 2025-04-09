@@ -1,40 +1,38 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:medical_storage/models/discount.dart';
+import 'package:medical_storage/models/voucher.dart';
 import 'base_service.dart';
 
-class DiscountService extends BaseService<Discount> {
-  DiscountService() : super(
-      endpoint: 'discounts',
-      fromJson: Discount.fromJson
+class VoucherService extends BaseService<Voucher> {
+  VoucherService()
+      : super(
+    endpoint: 'vouchers',
+    fromJson: Voucher.fromJson,
   );
 
-  Future<List<Discount>> getAllDiscounts() async {
-    final response = await http.get(
-        Uri.parse('$baseUrl/discounts')
-    );
+  // GET /api/vouchers
+  Future<List<Voucher>> getAllVouchers() async {
+    final response = await http.get(Uri.parse('$baseUrl/vouchers'));
 
     if (response.statusCode == 200) {
-      print('Raw JSON data: ${response.body}');
       final String utf8Body = utf8.decode(response.bodyBytes);
       List<dynamic> body = json.decode(utf8Body);
-      return body.map((dynamic item) => Discount.fromJson(item)).toList();
+      return body.map((dynamic item) => Voucher.fromJson(item)).toList();
     } else {
-      throw Exception('Không thể tải danh sách mã giảm giá');
+      throw Exception('Không thể tải danh sách voucher');
     }
   }
 
-  Future<Discount> getDiscountByCode(String code) async {
-    final response = await http.get(
-        Uri.parse('$baseUrl/discounts/by-code?code=$code')
-    );
+  // GET /api/vouchers/by-code/{code}
+  Future<Voucher> getVoucherByCode(String code) async {
+    final response = await http.get(Uri.parse('$baseUrl/vouchers/by-code/$code'));
 
     if (response.statusCode == 200) {
       final String utf8Body = utf8.decode(response.bodyBytes);
       Map<String, dynamic> body = json.decode(utf8Body);
-      return Discount.fromJson(body);
+      return Voucher.fromJson(body);
     } else {
-      throw Exception('Không thể tải mã giảm giá: $code');
+      throw Exception('Không thể tìm thấy voucher với mã: $code');
     }
   }
 }

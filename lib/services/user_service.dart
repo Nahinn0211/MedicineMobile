@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 
 class UserService {
-  final String baseUrl = 'http://192.168.1.252:8080/api';
+  final String baseUrl = 'http://192.168.1.103:8080/api';
 
   /// Lấy token từ SharedPreferences
   Future<String?> getToken() async {
