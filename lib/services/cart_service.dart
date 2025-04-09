@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:medical_storage/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'base_service.dart';
 
 import '../models/medicine_media.dart';
 
@@ -55,22 +56,58 @@ class CartItem {
 
   @override
   int get hashCode => medicine.id.hashCode ^ attribute.id.hashCode;
+
+  // Chuyển đổi CartItem sang JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'medicineId': medicine.id,
+      'attributeId': attribute.id,
+      'quantity': quantity,
+      'isSelected': isSelected,
+    };
+  }
+
+  // Tạo CartItem từ JSON
+  static CartItem fromJson(Map<String, dynamic> json,
+      {required Medicine medicine,
+        required Attribute attribute,
+        String? userId}) {
+    return CartItem(
+      medicine: medicine,
+      attribute: attribute,
+      quantity: json['quantity'] ?? 1,
+      isSelected: json['isSelected'] ?? false,
+      userId: userId,
+    );
+  }
 }
 
 class CartService extends ChangeNotifier {
   List<CartItem> _items = [];
   Voucher? _appliedVoucher;
   late String? user_Id = '';
+  final BaseService<Medicine> _medicineService;
+  final BaseService<Attribute> _attributeService;
 
-
-  CartService() {
+  CartService({
+    BaseService<Medicine>? medicineService,
+    BaseService<Attribute>? attributeService
+  }) :
+        _medicineService = medicineService ?? BaseService<Medicine>(
+            endpoint: 'medicines',
+            fromJson: Medicine.fromJson
+        ),
+        _attributeService = attributeService ?? BaseService<Attribute>(
+            endpoint: 'attributes',
+            fromJson: Attribute.fromJson
+        ) {
     _initializeCart();
   }
 
   Future<void> _initializeCart() async {
     final prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('userId');
-    user_Id =userId;
+    user_Id = userId;
     await loadCartFromLocal();
   }
 
@@ -90,38 +127,42 @@ class CartService extends ChangeNotifier {
   }
 
   Future<String> fetchMedicineImage(String medicineId) async {
-    final url = 'https://192.168.1.246/api/medicines/$medicineId'; // Update URL according to your API
+     const String baseUrl = 'http://192.168.1.248:8080/api';
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse('$baseUrl/medicines/$medicineId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['image']; // Assuming API returns an 'image' key
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data['image'] ?? '';
+      } else {
+        print('Failed to load image. Status code: ${response.statusCode}');
+        return '';
       }
     } catch (e) {
-      print("Error fetching image: $e");
+      print("Error fetching medicine image: $e");
+      return '';
     }
-    return ''; // Return empty string if image can't be retrieved
   }
 
   void addToCart(Medicine medicine, Attribute attribute, {MedicineMedia? media, int quantity = 1}) {
-    // Check if the product already exists in the cart
-    int existingIndex = -1;
-    for (int i = 0; i < _items.length; i++) {
-      if (_items[i].medicine.id == medicine.id &&
-          _items[i].attribute.id == attribute.id) {
-        existingIndex = i;
-        break;
-      }
-    }
+    // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
+    int existingIndex = _items.indexWhere(
+            (item) =>
+        item.medicine.id == medicine.id &&
+            item.attribute.id == attribute.id
+    );
 
     if (existingIndex != -1) {
-      // If it exists, update the quantity
+      // Nếu sản phẩm đã tồn tại, cập nhật số lượng
       _items[existingIndex] = _items[existingIndex].copyWith(
         quantity: _items[existingIndex].quantity + quantity,
         media: media ?? _items[existingIndex].media,
       );
     } else {
-      // Add new product to the cart
+      // Thêm sản phẩm mới vào giỏ hàng
       _items.add(CartItem(
         medicine: medicine,
         attribute: attribute,
@@ -180,13 +221,7 @@ class CartService extends ChangeNotifier {
 
   Future<void> saveCartToLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    final cartJson = _items.map((item) => {
-      'medicineId': item.medicine.id,
-      'attributeId': item.attribute.id,
-      'quantity': item.quantity,
-      'isSelected': item.isSelected,
-      // Add other fields if needed
-    }).toList();
+    final cartJson = _items.map((item) => item.toJson()).toList();
     await prefs.setString('cart_items', json.encode(cartJson));
   }
 
@@ -196,59 +231,28 @@ class CartService extends ChangeNotifier {
 
     if (cartJsonString != null) {
       final List<dynamic> cartJson = json.decode(cartJsonString);
-      // Clear the current cart before loading
+      // Xóa giỏ hàng hiện tại trước khi tải
       _items.clear();
 
-      // Need to add logic to fully restore CartItem information
-      // You'll need to query medicine and a information from the database
+      // Tải lại thông tin chi tiết cho từng mục
       for (var itemJson in cartJson) {
-        final medicine = await _fetchMedicineById(itemJson['medicineId']);
-        final attribute = await _fetchAttributeById(itemJson['attributeId']);
+        try {
+          final medicine = await _medicineService.getById(itemJson['medicineId']);
+          final attribute = await _attributeService.getById(itemJson['attributeId']);
 
-        if (medicine != null && attribute != null) {
-          final cartItem = CartItem(
-            medicine: medicine,
-            attribute: attribute,
-            quantity: itemJson['quantity'],
-            isSelected: itemJson['isSelected'] ?? false,
-            userId: user_Id,
+          final cartItem = CartItem.fromJson(
+              itemJson,
+              medicine: medicine,
+              attribute: attribute,
+              userId: user_Id
           );
           _items.add(cartItem);
+        } catch (e) {
+          print('Lỗi tải chi tiết mục giỏ hàng: $e');
         }
       }
       notifyListeners();
     }
-  }
-
-  // Helper method to get Medicine by ID
-  Future<Medicine?> _fetchMedicineById(String medicineId) async {
-    // Implement logic to get Medicine from API or local database
-    try {
-      final response = await http.get(
-          Uri.parse('http://10.0.0.90/api/medicines/$medicineId')
-      );
-      if (response.statusCode == 200) {
-        return Medicine.fromJson(json.decode(response.body));
-      }
-    } catch (e) {
-      print('Error fetching medicine info: $e');
-    }
-    return null;
-  }
-
-  // Helper method to get Attribute by ID
-  Future<Attribute?> _fetchAttributeById(String attributeId) async {
-    try {
-      final response = await http.get(
-          Uri.parse('http://10.0.0.90/api/attributes/$attributeId')
-      );
-      if (response.statusCode == 200) {
-        return Attribute.fromJson(json.decode(response.body));
-      }
-    } catch (e) {
-      print('Error fetching attribute info: $e');
-    }
-    return null;
   }
 
   void clearCart() {

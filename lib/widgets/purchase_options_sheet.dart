@@ -32,7 +32,7 @@ class _PurchaseOptionsSheetState extends State<PurchaseOptionsSheet> {
 
     // Lấy hình ảnh chính của sản phẩm
     final String imageUrl = widget.mediaList
-        .firstWhere((media) => media.mainImage, orElse: () => widget.mediaList.firstOrNull ?? MedicineMedia(
+        .firstWhere((media) => media.mainImage ?? false, orElse: () => widget.mediaList.firstOrNull ?? MedicineMedia(
       medicine: widget.medicine,
       mediaType: MediaType.image,
       mediaUrl: '',
