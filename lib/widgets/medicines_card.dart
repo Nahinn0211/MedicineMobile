@@ -21,10 +21,10 @@ class MedicinesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Lấy hình ảnh chính (mainImage) từ danh sách MedicineMedia của Medicine
-    final String imageUrl = medicine.media.isNotEmpty
-        ? medicine.media.firstWhere(
-          (media) => media.mainImage,
-      orElse: () => medicine.media.first, // Nếu không có mainImage, lấy phần tử đầu tiên
+    final String imageUrl = medicine.medias.isNotEmpty
+        ? medicine.medias.firstWhere(
+          (media) => media.mainImage ?? false,
+      orElse: () => medicine.medias.first, // Nếu không có mainImage, lấy phần tử đầu tiên
     ).mediaUrl
         : '';  // Nếu danh sách media rỗng, trả về chuỗi rỗng
 
@@ -44,7 +44,7 @@ class MedicinesCard extends StatelessWidget {
             builder: (context) => MedicineDetails(
               medicine: medicine,
               attributes: medicine.attributes,
-              mediaList: medicine.media,
+              mediaList: medicine.medias,
               brand: medicine.brand,
 
             ),
@@ -114,7 +114,7 @@ class MedicinesCard extends StatelessWidget {
                       builder: (context) => PurchaseOptionsSheet(
                         medicine: medicine,
                         attribute: attribute,
-                        mediaList: medicine.media,  // Truyền danh sách mediaList từ Medicine
+                        mediaList: medicine.medias,  // Truyền danh sách mediaList từ Medicine
                       ),
                     );
                   }

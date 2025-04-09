@@ -71,8 +71,8 @@ class CartPage extends StatelessWidget {
                     margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: ListTile(
                       leading: _buildProductImage(
-                          medicine.media.isNotEmpty
-                              ? medicine.media[0].mediaUrl
+                          medicine.medias.isNotEmpty
+                              ? medicine.medias[0].mediaUrl
                               : ''), // Kiểm tra và hiển thị mediaUrl
                       title: Text(
                         medicine.name,

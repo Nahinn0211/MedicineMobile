@@ -185,8 +185,8 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
-                              item.medicine.media.isNotEmpty
-                                  ? item.medicine.media.first.mediaUrl
+                              item.medicine.medias.isNotEmpty
+                                  ? item.medicine.medias.first.mediaUrl
                                   : 'https://via.placeholder.com/50',
                               width: 60,
                               height: 60,
