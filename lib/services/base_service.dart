@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class BaseService<T> {
-
   final String baseUrl = 'http://192.168.1.249:8080/api'; // xĐối với giả lập Android
   final String endpoint;
   final T Function(Map<String, dynamic>) fromJson;

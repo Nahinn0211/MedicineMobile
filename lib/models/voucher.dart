@@ -30,11 +30,11 @@ class Voucher extends BaseEntity {
 
   factory Voucher.fromJson(Map<String, dynamic> json) {
     return Voucher(
-      id: json['id'],
+      id: json['id'].toString() ,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      createdBy: json['createdBy'],
-      updatedBy: json['updatedBy'],
+      createdBy: json['createdBy'].toString(),
+      updatedBy: json['updatedBy'].toString(),
       isDeleted: json['isDeleted'],
       code: json['code'],
       voucherPercentage: json['voucherPercentage'].toDouble(),

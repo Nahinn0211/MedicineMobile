@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:medical_storage/models/medicine.dart';
 import 'package:medical_storage/models/voucher.dart';
 import 'package:medical_storage/models/attribute.dart';
-import 'package:http/http.dart' as http;
-import 'package:medical_storage/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'base_service.dart';
@@ -83,7 +81,8 @@ class CartItem {
 }
 
 class CartService extends ChangeNotifier {
-  List<CartItem> _items = [];
+  Map<String, CartItem> _items = {};
+  Map<String, CartItem> get itemsMap => _items;
   Voucher? _appliedVoucher;
   late String? user_Id = '';
   final BaseService<Medicine> _medicineService;
@@ -91,32 +90,22 @@ class CartService extends ChangeNotifier {
 
   CartService({
     BaseService<Medicine>? medicineService,
-    BaseService<Attribute>? attributeService
-  }) :
-        _medicineService = medicineService ?? BaseService<Medicine>(
-            endpoint: 'medicines',
-            fromJson: Medicine.fromJson
-        ),
-        _attributeService = attributeService ?? BaseService<Attribute>(
-            endpoint: 'attributes',
-            fromJson: Attribute.fromJson
-        ) {
+    BaseService<Attribute>? attributeService,
+  })  : _medicineService = medicineService ?? BaseService<Medicine>(endpoint: 'medicines', fromJson: Medicine.fromJson),
+        _attributeService = attributeService ?? BaseService<Attribute>(endpoint: 'attributes', fromJson: Attribute.fromJson) {
     _initializeCart();
   }
 
   Future<void> _initializeCart() async {
     final prefs = await SharedPreferences.getInstance();
-    String? userId = prefs.getString('userId');
-    user_Id = userId;
+    user_Id = prefs.getString('userId');
     await loadCartFromLocal();
   }
 
-  List<CartItem> get items => List.unmodifiable(_items);
+  List<CartItem> get items => _items.values.toList();
   Voucher? get appliedVoucher => _appliedVoucher;
 
-  double get subtotal {
-    return _items.fold(0, (total, item) => total + item.totalPrice);
-  }
+  double get subtotal => _items.values.fold(0, (sum, item) => sum + item.totalPrice);
 
   double get total {
     double subtotal = this.subtotal;
@@ -148,51 +137,42 @@ class CartService extends ChangeNotifier {
   }
 
   void addToCart(Medicine medicine, Attribute attribute, {MedicineMedia? media, int quantity = 1}) {
-    // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
-    int existingIndex = _items.indexWhere(
-            (item) =>
-        item.medicine.id == medicine.id &&
-            item.attribute.id == attribute.id
-    );
-
-    if (existingIndex != -1) {
-      // Nếu sản phẩm đã tồn tại, cập nhật số lượng
-      _items[existingIndex] = _items[existingIndex].copyWith(
-        quantity: _items[existingIndex].quantity + quantity,
-        media: media ?? _items[existingIndex].media,
+    final key = '${medicine.id}_$user_Id';
+    if (_items.containsKey(key)) {
+      final existing = _items[key]!;
+      _items[key] = existing.copyWith(
+        quantity: existing.quantity + quantity,
+        media: media ?? existing.media,
       );
     } else {
-      // Thêm sản phẩm mới vào giỏ hàng
-      _items.add(CartItem(
+      _items[key] = CartItem(
         medicine: medicine,
         attribute: attribute,
         media: media,
         quantity: quantity,
         userId: user_Id,
-      ));
+      );
     }
 
     notifyListeners();
     saveCartToLocal();
   }
 
-  void removeFromCart(CartItem item) {
-    _items.remove(item);
+  void removeFromCart(String key) {
+    _items.remove(key);
     notifyListeners();
     saveCartToLocal();
   }
 
-  void updateQuantity(CartItem item, int newQuantity) {
-    if (newQuantity <= 0) {
-      removeFromCart(item);
-      return;
-    }
-
-    final index = _items.indexOf(item);
-    if (index != -1) {
-      _items[index] = item.copyWith(quantity: newQuantity);
-      notifyListeners();
-      saveCartToLocal();
+  void updateQuantity(String key, int newQuantity) {
+    if (_items.containsKey(key)) {
+      if (newQuantity <= 0) {
+        removeFromCart(key);
+      } else {
+        _items[key] = _items[key]!.copyWith(quantity: newQuantity);
+        notifyListeners();
+        saveCartToLocal();
+      }
     }
   }
 
@@ -221,63 +201,61 @@ class CartService extends ChangeNotifier {
 
   Future<void> saveCartToLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    final cartJson = _items.map((item) => item.toJson()).toList();
-    await prefs.setString('cart_items', json.encode(cartJson));
+    final cartMapJson = _items.map((key, item) => MapEntry(key, item.toJson()));
+    await prefs.setString('cart_items', json.encode(cartMapJson));
   }
 
   Future<void> loadCartFromLocal() async {
     final prefs = await SharedPreferences.getInstance();
-    final cartJsonString = prefs.getString('cart_items');
+    final jsonString = prefs.getString('cart_items');
 
-    if (cartJsonString != null) {
-      final List<dynamic> cartJson = json.decode(cartJsonString);
-      // Xóa giỏ hàng hiện tại trước khi tải
+    if (jsonString != null) {
+      final Map<String, dynamic> cartJsonMap = json.decode(jsonString);
       _items.clear();
 
-      // Tải lại thông tin chi tiết cho từng mục
-      for (var itemJson in cartJson) {
+      for (var entry in cartJsonMap.entries) {
+        final key = entry.key;
+        final itemJson = entry.value;
+
         try {
           final medicine = await _medicineService.getById(itemJson['medicineId']);
           final attribute = await _attributeService.getById(itemJson['attributeId']);
 
           final cartItem = CartItem.fromJson(
-              itemJson,
-              medicine: medicine,
-              attribute: attribute,
-              userId: user_Id
+            itemJson,
+            medicine: medicine,
+            attribute: attribute,
+            userId: user_Id,
           );
-          _items.add(cartItem);
+
+          _items[key] = cartItem;
         } catch (e) {
-          print('Lỗi tải chi tiết mục giỏ hàng: $e');
+          print('Lỗi khi load cart item: $e');
         }
       }
-      notifyListeners();
     }
   }
 
-  void clearCart() {
+  Future<void> clearCart() async {
     _items.clear();
     _appliedVoucher = null;
     notifyListeners();
-    saveCartToLocal();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('cart_items');
   }
 
-  bool get isAllSelected {
-    return _items.isNotEmpty && _items.every((item) => item.isSelected);
-  }
+  // Lựa chọn
+  bool get isAllSelected => _items.values.isNotEmpty && _items.values.every((item) => item.isSelected);
 
   void toggleSelectAll(bool isSelected) {
-    for (int i = 0; i < _items.length; i++) {
-      _items[i] = _items[i].copyWith(isSelected: isSelected);
-    }
+    _items.updateAll((key, item) => item.copyWith(isSelected: isSelected));
     notifyListeners();
     saveCartToLocal();
   }
 
-  void toggleItemSelection(CartItem item, bool isSelected) {
-    final index = _items.indexOf(item);
-    if (index != -1) {
-      _items[index] = _items[index].copyWith(isSelected: isSelected);
+  void toggleItemSelection(String key, bool isSelected) {
+    if (_items.containsKey(key)) {
+      _items[key] = _items[key]!.copyWith(isSelected: isSelected);
       notifyListeners();
       saveCartToLocal();
     }

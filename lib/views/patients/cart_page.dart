@@ -7,6 +7,8 @@ class CartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cartService = Provider.of<CartService>(context);
+    final cartMapEntries = cartService.itemsMap.entries.toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Giỏ hàng'),
@@ -15,8 +17,7 @@ class CartPage extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: Builder(
-        builder: (scaffoldContext) =>
-        cartService.items.isEmpty
+        builder: (scaffoldContext) => cartService.items.isEmpty
             ? Center(
           child: Text(
             'Giỏ hàng trống',
@@ -51,35 +52,53 @@ class CartPage extends StatelessWidget {
                     },
                     child: Text(
                       "Tiếp tục mua sắm",
-                      style: TextStyle(color: Colors.blue, fontSize: 16),
+                      style:
+                      TextStyle(color: Colors.blue, fontSize: 16),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Danh sách sản phẩm trong giỏ hàng
+            // Danh sách sản phẩm
             Expanded(
               child: ListView.builder(
-                itemCount: cartService.items.length,
+                itemCount: cartMapEntries.length,
                 itemBuilder: (context, index) {
-                  final cartItem = cartService.items[index];
+                  final entry = cartMapEntries[index];
+                  final key = entry.key;
+                  final cartItem = entry.value;
                   final medicine = cartItem.medicine;
                   final attribute = cartItem.attribute;
 
                   return Card(
-                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     child: ListTile(
-                      leading: _buildProductImage(
-                          medicine.medias.isNotEmpty
-                              ? medicine.medias[0].mediaUrl
-                              : ''), // Kiểm tra và hiển thị mediaUrl
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: cartItem.isSelected,
+                            onChanged: (value) {
+                              cartService.toggleItemSelection(
+                                  key, value!);
+                            },
+                          ),
+                          _buildProductImage(
+                            medicine.medias.isNotEmpty
+                                ? medicine.medias[0].mediaUrl
+                                : '',
+                          ),
+                        ],
+                      ),
                       title: Text(
                         medicine.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,12 +115,15 @@ class CartPage extends StatelessWidget {
                           Row(
                             children: [
                               IconButton(
-                                icon: Icon(Icons.delete, color: Colors.grey),
+                                icon: Icon(Icons.delete,
+                                    color: Colors.grey),
                                 onPressed: () {
-                                  cartService.removeFromCart(cartItem);
+                                  _showDeleteConfirmationDialog(
+                                      context, cartService, key);
                                 },
                               ),
-                              _buildQuantitySelector(cartService, cartItem),
+                              _buildQuantitySelector(
+                                  cartService, cartItem, key),
                             ],
                           ),
                         ],
@@ -113,15 +135,21 @@ class CartPage extends StatelessWidget {
             ),
 
             // Thanh toán
-            _buildCheckoutSection(cartService, scaffoldContext),
+            _buildCheckoutSection(cartService, context),
           ],
         ),
       ),
     );
   }
 
-// Widget hiển thị tổng tiền & nút "Mua hàng"
-  Widget _buildCheckoutSection(CartService cartService, BuildContext context) {
+  Widget _buildCheckoutSection(
+      CartService cartService, BuildContext context) {
+    final selectedItems =
+    cartService.items.where((item) => item.isSelected).toList();
+
+    final totalSelected = selectedItems.fold(
+        0.0, (sum, item) => sum + item.totalPrice);
+
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -138,7 +166,7 @@ class CartPage extends StatelessWidget {
                 style: TextStyle(fontSize: 16),
               ),
               Text(
-                '${cartService.total.toStringAsFixed(0)}đ',
+                '${totalSelected.toStringAsFixed(0)}đ',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -148,13 +176,13 @@ class CartPage extends StatelessWidget {
           ),
           SizedBox(height: 16),
           ElevatedButton(
-            onPressed: cartService.items.isNotEmpty
+            onPressed: selectedItems.isNotEmpty
                 ? () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
-                      CheckoutPage(cartItems: cartService.items),
+                      CheckoutPage(cartItems: selectedItems),
                 ),
               );
             }
@@ -174,9 +202,10 @@ class CartPage extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildProductImage(String imageUrl) {
     return Image.network(
-      imageUrl.isNotEmpty ? imageUrl : 'https://via.placeholder.com/60', // Sử dụng placeholder nếu không có hình ảnh
+      imageUrl.isNotEmpty ? imageUrl : 'https://via.placeholder.com/60',
       width: 60,
       height: 60,
       fit: BoxFit.cover,
@@ -185,14 +214,16 @@ class CartPage extends StatelessWidget {
       },
     );
   }
-  Widget _buildQuantitySelector(CartService cartService, CartItem cartItem) {
+
+  Widget _buildQuantitySelector(
+      CartService cartService, CartItem cartItem, String key) {
     return Row(
       children: [
         IconButton(
           icon: Icon(Icons.remove_circle_outline, color: Colors.blue),
           onPressed: cartItem.quantity > 1
               ? () {
-            cartService.updateQuantity(cartItem, cartItem.quantity - 1);
+            cartService.updateQuantity(key, cartItem.quantity - 1);
           }
               : null,
         ),
@@ -203,10 +234,39 @@ class CartPage extends StatelessWidget {
         IconButton(
           icon: Icon(Icons.add_circle_outline, color: Colors.blue),
           onPressed: () {
-            cartService.updateQuantity(cartItem, cartItem.quantity + 1);
+            cartService.updateQuantity(key, cartItem.quantity + 1);
           },
         ),
       ],
+    );
+  }
+
+  void _showDeleteConfirmationDialog(
+      BuildContext context, CartService cartService, String key) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Xác nhận xóa"),
+          content: Text(
+              "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng không?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Đóng dialog
+              },
+              child: Text("Hủy"),
+            ),
+            TextButton(
+              onPressed: () {
+                cartService.removeFromCart(key);
+                Navigator.of(context).pop(); // Đóng dialog sau khi xóa
+              },
+              child: Text("Xóa", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
   }
 }
