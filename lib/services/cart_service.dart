@@ -115,6 +115,27 @@ class CartService extends ChangeNotifier {
     return subtotal;
   }
 
+  Future<String> fetchMedicineImage(String medicineId) async {
+     const String baseUrl = 'http://192.168.1.249:8080/api';
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/medicines/$medicineId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data['image'] ?? '';
+      } else {
+        print('Failed to load image. Status code: ${response.statusCode}');
+        return '';
+      }
+    } catch (e) {
+      print("Error fetching medicine image: $e");
+      return '';
+    }
+  }
+
   void addToCart(Medicine medicine, Attribute attribute, {MedicineMedia? media, int quantity = 1}) {
     final key = '${medicine.id}_$user_Id';
     if (_items.containsKey(key)) {

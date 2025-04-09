@@ -5,10 +5,11 @@ import 'base_entity.dart';
 import 'brand.dart';
 import 'category.dart';
 
+
 class Medicine extends BaseEntity {
   final String code;
   final String name;
-  final String brandId; // Đảm bảo luôn có giá trị
+  final String brandId;
   final String? description;
   final String? usageInstruction;
   final String? dosageInstruction;
@@ -21,6 +22,7 @@ class Medicine extends BaseEntity {
   final List<Attribute> attributes;
   final List<Category> categories;
   final List<MedicineMedia> medias;
+  final Rating? rating; // Thêm thuộc tính rating
 
   Medicine({
     String? id,
@@ -31,7 +33,7 @@ class Medicine extends BaseEntity {
     bool? isDeleted,
     required this.code,
     required this.name,
-    required this.brandId, // Thêm required
+    required this.brandId,
     this.description,
     this.usageInstruction,
     this.dosageInstruction,
@@ -44,6 +46,7 @@ class Medicine extends BaseEntity {
     this.attributes = const [],
     this.categories = const [],
     this.medias = const [],
+    this.rating, // Thêm rating vào constructor
   }) : super(
     id: id,
     createdAt: createdAt,
@@ -88,8 +91,12 @@ class Medicine extends BaseEntity {
       medias: (json['medias'] as List<dynamic>?)
           ?.map((media) => MedicineMedia.fromJson(media))
           .toList() ?? [],
+      rating: json['rating'] != null
+          ? Rating.fromJson(json['rating'])
+          : null, // Thêm parsing rating
     );
   }
+
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
@@ -109,6 +116,7 @@ class Medicine extends BaseEntity {
       'attributes': attributes.map((attr) => attr.toJson()).toList(),
       'categories': categories.map((cat) => cat.toJson()).toList(),
       'medias': medias.map((media) => media.toJson()).toList(),
+      'rating': rating?.toJson(), // Thêm rating vào JSON
     });
     return data;
   }
@@ -132,6 +140,7 @@ class Medicine extends BaseEntity {
     double? maxPrice,
     String? origin,
     BrandBasic? brand,
+    Rating? rating,
     List<Attribute>? attributes,
     List<Category>? categories,
     List<MedicineMedia>? medias,
@@ -155,6 +164,7 @@ class Medicine extends BaseEntity {
       maxPrice: maxPrice ?? this.maxPrice,
       origin: origin ?? this.origin,
       brand: brand ?? this.brand,
+      rating: rating ?? this.rating,
       attributes: attributes ?? this.attributes,
       categories: categories ?? this.categories,
       medias: medias ?? this.medias,
@@ -162,7 +172,29 @@ class Medicine extends BaseEntity {
   }
 }
 
-// Tạo class BrandBasic tương ứng với BrandBasicDTO
+class Rating {
+  final double averageRating;
+  final int totalReviews;
+
+  Rating({
+    required this.averageRating,
+    required this.totalReviews,
+  });
+
+  factory Rating.fromJson(Map<String, dynamic> json) {
+    return Rating(
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: json['totalReviews'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'averageRating': averageRating,
+      'totalReviews': totalReviews,
+    };
+  }
+}
 class BrandBasic {
   final String? id;
   final String? name;
