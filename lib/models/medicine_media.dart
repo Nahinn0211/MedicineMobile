@@ -4,10 +4,13 @@ import 'base_entity.dart';
 import 'medicine.dart';
 
 class MedicineMedia extends BaseEntity {
-  final Medicine medicine;
+  final Medicine? medicine;
   final MediaType mediaType;
   final String mediaUrl;
-  final bool mainImage;
+  final bool? mainImage;
+  final String? fileName;
+  final int? fileSize;
+  final String? contentType;
 
   MedicineMedia({
     String? id,
@@ -16,10 +19,13 @@ class MedicineMedia extends BaseEntity {
     String? createdBy,
     String? updatedBy,
     bool? isDeleted,
-    required this.medicine,
+    this.medicine,
     required this.mediaType,
     required this.mediaUrl,
-    required this.mainImage,
+    this.mainImage,
+    this.fileName,
+    this.fileSize,
+    this.contentType,
   }) : super(
     id: id,
     createdAt: createdAt,
@@ -62,10 +68,13 @@ class MedicineMedia extends BaseEntity {
       createdBy: json['createdBy'],
       updatedBy: json['updatedBy'],
       isDeleted: json['isDeleted'],
-      medicine: medicine ?? Medicine(code: '', name: '', brandId: ''), // Fallback giá trị
+      medicine: medicine,
       mediaType: mediaTypeValue,
       mediaUrl: json['mediaUrl'] ?? '',
-      mainImage: json['mainImage'] ?? false,
+      mainImage: json['mainImage'],
+      fileName: json['fileName'],
+      fileSize: json['fileSize'] != null ? int.tryParse(json['fileSize'].toString()) : null,
+      contentType: json['contentType'],
     );
   }
 
@@ -73,10 +82,13 @@ class MedicineMedia extends BaseEntity {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
     data.addAll({
-      'medicine': medicine.toJson(),
+      'medicine': medicine?.toJson(),
       'mediaType': mediaType.toString().split('.').last.toUpperCase(),
       'mediaUrl': mediaUrl,
       'mainImage': mainImage,
+      'fileName': fileName,
+      'fileSize': fileSize,
+      'contentType': contentType,
     });
     return data;
   }
@@ -92,6 +104,9 @@ class MedicineMedia extends BaseEntity {
     MediaType? mediaType,
     String? mediaUrl,
     bool? mainImage,
+    String? fileName,
+    int? fileSize,
+    String? contentType,
   }) {
     return MedicineMedia(
       id: id ?? this.id,
@@ -104,6 +119,9 @@ class MedicineMedia extends BaseEntity {
       mediaType: mediaType ?? this.mediaType,
       mediaUrl: mediaUrl ?? this.mediaUrl,
       mainImage: mainImage ?? this.mainImage,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      contentType: contentType ?? this.contentType,
     );
   }
 }

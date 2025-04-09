@@ -241,8 +241,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ...widget.cartItems.map((item) => Card(
           child: ListTile(
             leading: Image.network(
-              item.medicine.media.isNotEmpty
-                  ? item.medicine.media.first.mediaUrl
+              item.medicine.medias.isNotEmpty
+                  ? item.medicine.medias.first.mediaUrl
                   : 'https://via.placeholder.com/50',
               width: 50,
               height: 50,

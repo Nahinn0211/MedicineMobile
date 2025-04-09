@@ -4,9 +4,8 @@ import 'package:medical_storage/models/attribute.dart';
 import 'package:medical_storage/models/medicine_category.dart';
 import 'package:medical_storage/models/medicine_media.dart';
 import 'package:medical_storage/models/medicine.dart';
-
-import '../models/brand.dart';
-import '../models/media_type.dart';
+import 'package:medical_storage/models/brand.dart';
+import 'package:medical_storage/models/media_type.dart';
 import 'base_service.dart';
 
 class MedicineService extends BaseService<Medicine> {
@@ -14,7 +13,6 @@ class MedicineService extends BaseService<Medicine> {
       endpoint: 'medicines',
       fromJson: Medicine.fromJson
   );
-  // Cấu hình base URL - thay thế bằng URL thực tế của API
 
   // Lấy danh sách thuốc bán chạy nhất
   Future<List<Medicine>> getMedicineBestSaling() async {
@@ -23,8 +21,6 @@ class MedicineService extends BaseService<Medicine> {
         Uri.parse('$baseUrl/medicines/getMedicineBestSaling'),
         headers: {
           'Content-Type': 'application/json',
-          // Thêm headers xác thực nếu cần
-          // 'Authorization': 'Bearer $token'
         },
       );
 
@@ -45,133 +41,30 @@ class MedicineService extends BaseService<Medicine> {
     try {
       final response = await http.get(Uri.parse('$baseUrl/medicines/newest'));
 
-
       if (response.statusCode == 200) {
         final String utf8Body = utf8.decode(response.bodyBytes);
         final List<dynamic> data = json.decode(utf8Body);
 
-        List<Medicine> medicines = [];
-
-        // Duyệt và xử lý từng mục
-        for (var item in data) {
-          try {
-            // Chuyển đổi id sang String an toàn
-            item['id'] = item['id'] == null ? null : item['id'].toString();
-
-            // Tạo đối tượng Medicine
-            Medicine medicine = Medicine.fromJson(item);
-            if (medicine.id != null) {
-              try {
-                final brandResponse = await http.get(
-                  Uri.parse('$baseUrl/brands/${medicine.brandId}'),
-                  headers: {'Content-Type': 'application/json'},
-                );
-
-                if (brandResponse.statusCode == 200) {
-                  final brandData = json.decode(utf8.decode(brandResponse.bodyBytes));
-                  // Kiểm tra kiểu dữ liệu của brandData
-                  if (brandData is Map<String, dynamic>) {
-                    final Brand brand = Brand.fromJson(brandData);
-                    medicine = medicine.copyWith(
-                        brand: brand
-                    );
-                  } else {
-                  }
-                } else {
-                }
-              } catch (mediaError) {
-              }
-            }
-
-            // Lấy media
-            if (medicine.id != null) {
-              try {
-                final mediaResponse = await http.get(
-                  Uri.parse('$baseUrl/medicine-media/by-medicine/${medicine.id}'),
-                  headers: {'Content-Type': 'application/json'},
-                );
-
-                if (mediaResponse.statusCode == 200) {
-                  final mediaData = json.decode(utf8.decode(mediaResponse.bodyBytes));
-                  if (mediaData is List) {
-                    medicine = medicine.copyWith(
-                        media: mediaData.map<MedicineMedia>((item) {
-                          // Đảm bảo các trường không bị null
-                          if (item is! Map<String, dynamic>) {
-                            return MedicineMedia(
-                                medicine: medicine,
-                                mediaType: MediaType.image,
-                                mediaUrl: '',
-                                mainImage: false
-                            );
-                          }
-
-                          // Đảm bảo id được chuyển sang String
-                          item['id'] = item['id'] == null ? null : item['id'].toString();
-
-                          return MedicineMedia.fromJson(item);
-                        }).toList()
-                    );
-                  }
-                } else {
-                }
-              } catch (mediaError) {
-              }
-            }
-
-            // Lấy attributes
-            if (medicine.id != null) {
-              try {
-                final attributeResponse = await http.get(
-                  Uri.parse('$baseUrl/attributes/medicine/${medicine.id}'),
-                  headers: {'Content-Type': 'application/json'},
-                );
-
-                if (attributeResponse.statusCode == 200) {
-                  final attributeData = json.decode(utf8.decode(attributeResponse.bodyBytes));
-
-                  if (attributeData is List) {
-                    medicine = medicine.copyWith(
-                        attributes: attributeData.map<Attribute>((item) {
-                          // Đảm bảo các trường không bị null
-                          if (item is! Map<String, dynamic>) {
-                            return Attribute(
-                                name: '',
-                                priceIn: 0,
-                                priceOut: 0,
-                                stock: 0
-                            );
-                          }
-
-                          // Đảm bảo id được chuyển sang String
-                          item['id'] = item['id'] == null ? null : item['id'].toString();
-
-                          // Xử lý các trường số
-                          item['priceIn'] = (item['priceIn'] ?? 0).toDouble();
-                          item['priceOut'] = (item['priceOut'] ?? 0).toDouble();
-                          item['stock'] = item['stock'] ?? 0;
-
-                          return Attribute.fromJson(item);
-                        }).toList()
-                    );
-                  }
-                } else {
-                }
-              } catch (attributeError) {
-              }
-            }
-
-            medicines.add(medicine);
-          } catch (e) {
-          }
+        // In ra số lượng và một số thông tin cơ bản để kiểm tra
+        print('Số lượng thuốc mới: ${data.length}');
+        if (data.isNotEmpty) {
+          print('Thuốc đầu tiên: ${data[0]['name']}');
         }
+
+        final List<Medicine> medicines = data
+            .map((item) => Medicine.fromJson(item))
+            .toList();
+
+        print('Số lượng Medicine sau khi parse: ${medicines.length}');
 
         return medicines;
       } else {
-        throw Exception('Failed to load medicines: ${response.body}');
+        print('Lỗi response: ${response.body}');
+        throw Exception('Không thể tải danh sách thuốc mới: ${response.body}');
       }
     } catch (e) {
-      throw Exception('Failed to get new medicines');
+      print('Lỗi chi tiết: $e');
+      throw Exception('Không thể lấy thuốc mới: $e');
     }
   }
 
@@ -237,7 +130,6 @@ class MedicineService extends BaseService<Medicine> {
         },
       );
 
-
       if (response.statusCode == 200) {
         final String utf8Body = utf8.decode(response.bodyBytes);
         List<dynamic> body = json.decode(utf8Body);
@@ -250,6 +142,7 @@ class MedicineService extends BaseService<Medicine> {
     }
   }
 
+  // Lấy chi tiết thuốc theo ID
   Future<Medicine> getMedicineById(String medicineId) async {
     try {
       final response = await http.get(
@@ -258,7 +151,6 @@ class MedicineService extends BaseService<Medicine> {
           'Content-Type': 'application/json',
         },
       );
-
 
       if (response.statusCode == 200) {
         final String utf8Body = utf8.decode(response.bodyBytes);
@@ -271,7 +163,6 @@ class MedicineService extends BaseService<Medicine> {
       rethrow;
     }
   }
-  // Lấy chi tiết một loại thuốc theo ID
 
   // Lọc thuốc theo khoảng giá
   Future<List<Medicine>> filterMedicinesByPriceRange(double minPrice, double maxPrice) async {
@@ -290,7 +181,8 @@ class MedicineService extends BaseService<Medicine> {
       } else {
         throw Exception('Lọc thuốc theo giá thất bại. Mã lỗi: ${response.statusCode}');
       }
-    } catch (e) {rethrow;
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -315,16 +207,7 @@ class MedicineService extends BaseService<Medicine> {
       rethrow;
     }
   }
-  Future<Brand> getBrandById(String brandId) async {
-    final response = await http.get(Uri.parse('$baseUrl/brands/$brandId'));
 
-    if (response.statusCode == 200) {
-      final brandData = json.decode(utf8.decode(response.bodyBytes));
-      return Brand.fromJson(brandData);
-    } else {
-      throw Exception('Failed to load brand');
-    }
-  }
   // Lấy tất cả các loại thuốc
   Future<List<Medicine>> getAllMedicines() async {
     try {
@@ -343,24 +226,6 @@ class MedicineService extends BaseService<Medicine> {
             // Tạo đối tượng Medicine
             Medicine medicine = Medicine.fromJson(item);
 
-            if (medicine.id != null) {
-              try {
-                final brandResponse = await http.get(
-                  Uri.parse('$baseUrl/brands/${medicine.brandId}'),
-                  headers: {'Content-Type': 'application/json'},
-                );
-
-                if (brandResponse.statusCode == 200) {
-                  final brandData = json.decode(utf8.decode(brandResponse.bodyBytes));
-                  medicine = medicine.copyWith(
-                      brand: brandData
-                  );
-                } else {
-                }
-              } catch (mediaError) {
-              }
-            }
-
             // Lấy media
             if (medicine.id != null) {
               try {
@@ -374,11 +239,10 @@ class MedicineService extends BaseService<Medicine> {
 
                   if (mediaData is List) {
                     medicine = medicine.copyWith(
-                        media: mediaData.map<MedicineMedia>((item) {
+                        medias: mediaData.map<MedicineMedia>((item) {
                           // Đảm bảo các trường không bị null
                           if (item is! Map<String, dynamic>) {
                             return MedicineMedia(
-                                medicine: medicine,
                                 mediaType: MediaType.image,
                                 mediaUrl: '',
                                 mainImage: false
@@ -392,9 +256,9 @@ class MedicineService extends BaseService<Medicine> {
                         }).toList()
                     );
                   }
-                } else {
                 }
               } catch (mediaError) {
+                // Log error hoặc xử lý nếu cần
               }
             }
 
@@ -432,14 +296,15 @@ class MedicineService extends BaseService<Medicine> {
                         }).toList()
                     );
                   }
-                } else {
                 }
               } catch (attributeError) {
+                // Log error hoặc xử lý nếu cần
               }
             }
 
             medicines.add(medicine);
           } catch (e) {
+            // Log error hoặc xử lý nếu cần
           }
         }
 
@@ -451,12 +316,12 @@ class MedicineService extends BaseService<Medicine> {
       rethrow;
     }
   }
+
+  // Làm phong phú thêm thông tin cho danh sách thuốc
   Future<List<Medicine>> enrichMedicineList(List<Medicine> medicines) async {
     try {
       final enrichedMedicines = await Future.wait(medicines.map((medicine) async {
         try {
-          // In ra ID để kiểm tra
-
           // Bắt buộc phải có ID
           if (medicine.id == null) {
             return medicine;
@@ -467,6 +332,7 @@ class MedicineService extends BaseService<Medicine> {
           try {
             media = await getAllMediaByMedicineId(medicine.id!);
           } catch (mediaError) {
+            // Log error nếu cần
           }
 
           // Thử lấy chi tiết thuốc
@@ -474,11 +340,12 @@ class MedicineService extends BaseService<Medicine> {
           try {
             fullMedicineDetails = await getMedicineById(medicine.id!);
           } catch (detailError) {
+            // Log error nếu cần
           }
 
           // Trả về thuốc với dữ liệu mới nếu có
           return medicine.copyWith(
-            media: media.isNotEmpty ? media : medicine.media,
+            medias: media.isNotEmpty ? media : medicine.medias,
             attributes: fullMedicineDetails?.attributes.isNotEmpty == true
                 ? fullMedicineDetails!.attributes
                 : medicine.attributes,
@@ -493,5 +360,160 @@ class MedicineService extends BaseService<Medicine> {
       return medicines;
     }
   }
-}
 
+  // Lấy thông tin thương hiệu theo ID
+  Future<Brand> getBrandById(String brandId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/brands/$brandId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final brandData = json.decode(utf8.decode(response.bodyBytes));
+        return Brand.fromJson(brandData);
+      } else {
+        throw Exception('Không thể tải thông tin thương hiệu. Mã lỗi: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Thêm thuốc mới
+  Future<Medicine> createMedicine(Medicine medicine) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/medicines'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(medicine.toJson()),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseBody = json.decode(utf8.decode(response.bodyBytes));
+        return Medicine.fromJson(responseBody);
+      } else {
+        throw Exception('Không thể tạo thuốc mới. Mã lỗi: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Cập nhật thông tin thuốc
+  Future<Medicine> updateMedicine(Medicine medicine) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/medicines/${medicine.id}'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(medicine.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(utf8.decode(response.bodyBytes));
+        return Medicine.fromJson(responseBody);
+      } else {
+        throw Exception('Không thể cập nhật thuốc. Mã lỗi: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Xóa thuốc
+  Future<bool> deleteMedicine(String medicineId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/medicines/$medicineId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        throw Exception('Không thể xóa thuốc. Mã lỗi: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Tìm kiếm thuốc nâng cao
+  Future<List<Medicine>> advancedSearchMedicines({
+    String? name,
+    String? code,
+    String? brandId,
+    String? categoryId,
+    double? minPrice,
+    double? maxPrice,
+    bool? isPrescriptionRequired,
+    String? origin,
+    String? sortBy,
+    bool? sortAscending,
+  }) async {
+    try {
+      // Xây dựng query parameters
+      var queryParameters = <String, String>{};
+
+      if (name != null && name.isNotEmpty) {
+        queryParameters['name'] = name;
+      }
+      if (code != null && code.isNotEmpty) {
+        queryParameters['code'] = code;
+      }
+      if (brandId != null && brandId.isNotEmpty) {
+        queryParameters['brandId'] = brandId;
+      }
+      if (categoryId != null && categoryId.isNotEmpty) {
+        queryParameters['categoryId'] = categoryId;
+      }
+      if (minPrice != null) {
+        queryParameters['minPrice'] = minPrice.toString();
+      }
+      if (maxPrice != null) {
+        queryParameters['maxPrice'] = maxPrice.toString();
+      }
+      if (isPrescriptionRequired != null) {
+        queryParameters['isPrescriptionRequired'] = isPrescriptionRequired.toString();
+      }
+      if (origin != null && origin.isNotEmpty) {
+        queryParameters['origin'] = origin;
+      }
+      if (sortBy != null && sortBy.isNotEmpty) {
+        queryParameters['sortBy'] = sortBy;
+      }
+      if (sortAscending != null) {
+        queryParameters['sortAscending'] = sortAscending.toString();
+      }
+
+      // Tạo URL với query parameters
+      var url = Uri.parse('$baseUrl/medicines/advanced-search').replace(
+        queryParameters: queryParameters,
+      );
+
+      // Gửi request
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final String utf8Body = utf8.decode(response.bodyBytes);
+        List<dynamic> body = json.decode(utf8Body);
+        return body.map((dynamic item) => Medicine.fromJson(item)).toList();
+      } else {
+        throw Exception('Tìm kiếm nâng cao không thành công. Mã lỗi: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}

@@ -104,7 +104,7 @@ class _SearchPageState extends State<SearchPage> {
 
                   final medicine = filteredResults[index];
                   return ListTile(
-                    leading: Image.asset(medicine.media.first.mediaUrl,
+                    leading: Image.asset(medicine.medias.first.mediaUrl,
                         width: 50, height: 50, fit: BoxFit.cover),
                     title: Text(medicine.name),
                     subtitle: Text(medicine.description ?? ''),

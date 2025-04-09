@@ -17,7 +17,7 @@ class MedicineListPage extends StatefulWidget {
 }
 
 class _MedicineListPageState extends State<MedicineListPage> {
-  List<Medicine> medicins = [];
+  List<Medicine> medicines = [];
   List<Category> categories = [];
   final CategoryService _categoryService = CategoryService();
   final MedicineService _medicineService = MedicineService();
@@ -27,7 +27,13 @@ class _MedicineListPageState extends State<MedicineListPage> {
   String _errorMessage = '';
 
   String selectedFilter = 'Tất cả';
-  final List<String> filters = ['Tất cả', 'Bán chạy','Sản phẩm mới', 'Giá thấp', 'Giá cao'];
+  final List<String> filters = [
+    'Tất cả',
+    'Bán chạy',
+    'Sản phẩm mới',
+    'Giá thấp',
+    'Giá cao'
+  ];
 
   @override
   void initState() {
@@ -61,7 +67,8 @@ class _MedicineListPageState extends State<MedicineListPage> {
 
   Future<void> _fetchCategories() async {
     try {
-      List<Category> fetchedCategories = await _categoryService.getAllCategories();
+      List<Category> fetchedCategories = await _categoryService
+          .getAllCategories();
       setState(() {
         categories = fetchedCategories;
       });
@@ -69,6 +76,7 @@ class _MedicineListPageState extends State<MedicineListPage> {
       rethrow;
     }
   }
+
   Future<void> _fetchEnrichedMedicineDetails(List<Medicine> medicines) async {
     try {
       List<Medicine> enrichedMedicines = [];
@@ -82,15 +90,19 @@ class _MedicineListPageState extends State<MedicineListPage> {
 
           // Lấy chi tiết thuốc để lấy attributes
           Medicine? fullMedicineDetails;
-          Brand? brand;
+          BrandBasic? brand;
           try {
-            fullMedicineDetails = await _medicineService.getMedicineById(medicine.id!);
+            fullMedicineDetails =
+            await _medicineService.getMedicineById(medicine.id!);
 
             // Nếu có brandId, gọi API lấy thông tin brand
             if (medicine.brandId != null) {
-              brand = await _medicineService.getBrandById(medicine.brandId!);
+              var brandDetails = await _medicineService.getBrandById(
+                  medicine.brandId!);
+              brand = BrandBasic(id: brandDetails.id, name: brandDetails.name);
             }
           } catch (detailError) {
+            // Log error nếu cần
           }
 
           // Tạo một bản sao của thuốc với attributes và brand mới
@@ -109,11 +121,13 @@ class _MedicineListPageState extends State<MedicineListPage> {
 
       // Cập nhật danh sách thuốc
       setState(() {
-        medicins = enrichedMedicines;
+        medicines = enrichedMedicines;
       });
     } catch (e) {
+      // Log error nếu cần
     }
   }
+
   // Phương thức tải danh sách thuốc
   Future<void> _fetchMedicines() async {
     try {
@@ -140,26 +154,32 @@ class _MedicineListPageState extends State<MedicineListPage> {
     }
   }
 
-  // Tương tự, điều chỉnh các phương thức khác như _fetchMedicineBestSellers và _fetchMedicineNew
+  // Lấy thuốc bán chạy
   Future<void> _fetchMedicineBestSellers() async {
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = '';
       });
-      List<Medicine> bestSellers = await _medicineService.getMedicineBestSaling();
+      List<Medicine> bestSellers = await _medicineService
+          .getMedicineBestSaling();
 
       // Làm phong phú danh sách thuốc bán chạy
-      List<Medicine> enrichedBestSellers = await _medicineService.enrichMedicineList(bestSellers);
+      List<Medicine> enrichedBestSellers = await _medicineService
+          .enrichMedicineList(bestSellers);
       setState(() {
-        medicins = enrichedBestSellers;
+        medicines = enrichedBestSellers;
         _isLoading = false;
       });
     } catch (e) {
-      // ... (giữ nguyên phần xử lý lỗi)
+      setState(() {
+        _errorMessage = 'Không thể tải thuốc bán chạy: ${e.toString()}';
+        _isLoading = false;
+      });
     }
   }
 
+  // Lấy thuốc mới
   Future<void> _fetchMedicineNew() async {
     try {
       setState(() {
@@ -169,16 +189,19 @@ class _MedicineListPageState extends State<MedicineListPage> {
       List<Medicine> newMedicines = await _medicineService.getMedicineNew();
 
       // Làm phong phú danh sách sản phẩm mới
-      List<Medicine> enrichedNewMedicines = await _medicineService.enrichMedicineList(newMedicines);
+      List<Medicine> enrichedNewMedicines = await _medicineService
+          .enrichMedicineList(newMedicines);
       setState(() {
-        medicins = enrichedNewMedicines;
+        medicines = enrichedNewMedicines;
         _isLoading = false;
       });
     } catch (e) {
-      // ... (giữ nguyên phần xử lý lỗi)
+      setState(() {
+        _errorMessage = 'Không thể tải thuốc mới: ${e.toString()}';
+        _isLoading = false;
+      });
     }
   }
-
 
   // Hàm sắp xếp và lọc thuốc
   void _sortMedicines(String filter) {
@@ -190,7 +213,7 @@ class _MedicineListPageState extends State<MedicineListPage> {
           _fetchMedicines();
           break;
         case 'Giá thấp':
-          medicins.sort((a, b) {
+          medicines.sort((a, b) {
             if (a.attributes.isEmpty && b.attributes.isEmpty) return 0;
             if (a.attributes.isEmpty) return -1; // a không có giá thì xếp trước
             if (b.attributes.isEmpty)
@@ -206,7 +229,7 @@ class _MedicineListPageState extends State<MedicineListPage> {
           });
           break;
         case 'Giá cao':
-          medicins.sort((a, b) {
+          medicines.sort((a, b) {
             if (a.attributes.isEmpty && b.attributes.isEmpty) return 0;
             if (a.attributes.isEmpty) return 1; // a không có giá thì xếp sau
             if (b.attributes.isEmpty)
@@ -292,7 +315,8 @@ class _MedicineListPageState extends State<MedicineListPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 10),
                         child: Row(
                           children: [
                             category.image != null
@@ -304,15 +328,18 @@ class _MedicineListPageState extends State<MedicineListPage> {
                                 height: 30,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.image_not_supported, size: 30, color: Colors.grey),
+                                const Icon(Icons.image_not_supported, size: 30,
+                                    color: Colors.grey),
                               ),
                             )
-                                : const Icon(Icons.category, size: 30, color: Colors.grey),
+                                : const Icon(
+                                Icons.category, size: 30, color: Colors.grey),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 category.name,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600, fontSize: 14),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -341,7 +368,8 @@ class _MedicineListPageState extends State<MedicineListPage> {
                           Text(
                               _showAllCategories
                                   ? "Thu gọn"
-                                  : "Xem thêm ${categories.length - 4} danh mục",
+                                  : "Xem thêm ${categories.length -
+                                  4} danh mục",
                               style: const TextStyle(color: Colors.blue)
                           ),
                         ],
@@ -372,7 +400,8 @@ class _MedicineListPageState extends State<MedicineListPage> {
                         },
                       ),
                     ),
-                  const SizedBox(width: 8), // Khoảng cách giữa chips và icon lọc
+                  const SizedBox(width: 8),
+                  // Khoảng cách giữa chips và icon lọc
                   IconButton(
                       icon: const Icon(Icons.filter_list),
                       onPressed: () {
@@ -405,7 +434,7 @@ class _MedicineListPageState extends State<MedicineListPage> {
                     )
                   ],
                 ))
-                : medicins.isEmpty
+                : medicines.isEmpty
                 ? const Center(child: Text('Không có thuốc nào'))
                 : RefreshIndicator(
               onRefresh: _fetchInitialData,
@@ -417,9 +446,9 @@ class _MedicineListPageState extends State<MedicineListPage> {
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: medicins.length,
+                itemCount: medicines.length,
                 itemBuilder: (context, index) {
-                  return MedicinesCard(medicine: medicins[index]);
+                  return MedicinesCard(medicine: medicines[index]);
                 },
               ),
             ),
@@ -435,4 +464,193 @@ class _MedicineListPageState extends State<MedicineListPage> {
       _showAllCategories = !_showAllCategories;
     });
   }
+
+// Hiển thị dialog lọc nâng cao
+  void _showAdvancedFilterDialog() {
+    // Các biến điều khiển bộ lọc
+    String? selectedBrand;
+    String? selectedCategory;
+    RangeValues? priceRange;
+    bool? isPrescriptionRequired;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Bộ lọc nâng cao'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Lọc theo thương hiệu
+                    const Text('Thương hiệu',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('Chọn thương hiệu'),
+                      value: selectedBrand,
+                      items: categories.map((category) {
+                        return DropdownMenuItem<String>(
+                          value: category.id,
+                          child: Text(category.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedBrand = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Lọc theo danh mục
+                    const Text('Danh mục',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('Chọn danh mục'),
+                      value: selectedCategory,
+                      items: categories.map((category) {
+                        return DropdownMenuItem<String>(
+                          value: category.id,
+                          child: Text(category.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCategory = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Lọc theo khoảng giá
+                    const Text('Khoảng giá',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    RangeSlider(
+                      values: priceRange ?? const RangeValues(0, 1000000),
+                      min: 0,
+                      max: 1000000,
+                      divisions: 100,
+                      labels: RangeLabels(
+                        '${priceRange?.start.round() ?? 0}',
+                        '${priceRange?.end.round() ?? 1000000}',
+                      ),
+                      onChanged: (RangeValues values) {
+                        setState(() {
+                          priceRange = values;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Lọc theo yêu cầu đơn thuốc
+                    const Text('Yêu cầu đơn thuốc',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('Không'),
+                            value: false,
+                            groupValue: isPrescriptionRequired,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                isPrescriptionRequired = value;
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            title: const Text('Có'),
+                            value: true,
+                            groupValue: isPrescriptionRequired,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                isPrescriptionRequired = value;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Thực hiện tìm kiếm với các bộ lọc
+                    _applyAdvancedFilter(
+                      brandId: selectedBrand,
+                      categoryId: selectedCategory,
+                      minPrice: priceRange?.start,
+                      maxPrice: priceRange?.end,
+                      isPrescriptionRequired: isPrescriptionRequired,
+                    );
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Áp dụng'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+// Áp dụng bộ lọc nâng cao
+  Future<void> _applyAdvancedFilter({
+    String? brandId,
+    String? categoryId,
+    double? minPrice,
+    double? maxPrice,
+    bool? isPrescriptionRequired,
+  }) async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      // Gọi phương thức tìm kiếm nâng cao từ service
+      List<Medicine> filteredMedicines = await _medicineService
+          .advancedSearchMedicines(
+        brandId: brandId,
+        categoryId: categoryId,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        isPrescriptionRequired: isPrescriptionRequired,
+      );
+
+      // Làm phong phú danh sách thuốc
+      List<Medicine> enrichedMedicines = await _medicineService
+          .enrichMedicineList(filteredMedicines);
+
+      setState(() {
+        medicines = enrichedMedicines;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Không thể lọc thuốc: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
 }
+
