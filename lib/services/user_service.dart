@@ -220,9 +220,9 @@ class UserService {
 
       // Đọc response
       final responseBody = await response.stream.bytesToString();
-
       if (response.statusCode == 200) {
         final userData = json.decode(responseBody);
+        print(userData);
         return User.fromJson(userData);
       } else {
         print('❌ Lỗi upload: ${response.statusCode} - $responseBody');

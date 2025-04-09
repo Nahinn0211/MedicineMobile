@@ -4,6 +4,7 @@ import 'package:medical_storage/services/auth_service.dart';
 import 'package:medical_storage/services/user_service.dart';
 import 'package:medical_storage/models/user.dart';
 import 'package:medical_storage/views/patients/Profile/account_view/deposit.dart';
+import 'package:medical_storage/views/patients/Profile/doncuatoi/order_page.dart';
 import 'package:medical_storage/widgets/HomeWidget/bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -132,50 +133,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildOrderStatusSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildOrderStatusIcon(
-            Icons.pending,
-            'Đang xử lý',
-                () => print("Pending icon tapped"),
-          ),
-          _buildOrderStatusIcon(
-            Icons.local_shipping,
-            'Đang Giao',
-                () => print("Delivering icon tapped"),
-          ),
-          _buildOrderStatusIcon(
-            Icons.check_circle,
-            'Đã Giao',
-                () => print("Delivered icon tapped"),
-          ),
-          _buildOrderStatusIcon(
-            Icons.cached,
-            'Đổi/Trả',
-                () => print("Exchange/Return icon tapped"),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAccountSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -208,10 +165,21 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           _buildAccountMenuItem(
-            Icons.medication,
+            Icons.shopping_cart,
             'Đơn của tôi',
-                () => print("My Orders tapped"),
+                () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => OrderPage()),
+            ),
           ),
+          // _buildAccountMenuItem(
+          //   Icons.calendar_month,
+          //   'Lịch tư vấn của tôi',
+          //       () => Navigator.push(
+          //     context,
+          //     MaterialPageRoute(builder: (context) => OrderPage()),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -327,9 +295,6 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             const SizedBox(height: 20),
             _buildProfileHeader(),
-            const SizedBox(height: 20),
-            _buildSectionTitle('Trạng thái đơn hàng'),
-            _buildOrderStatusSection(),
             const SizedBox(height: 20),
             _buildSectionTitle('Tài Khoản'),
             _buildAccountSection(),
