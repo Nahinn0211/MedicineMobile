@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medical_storage/services/service_service.dart';
 import 'package:medical_storage/models/service.dart';
+import '../../widgets/HomeWidget/bottom_bar.dart';
+import 'appointment_page.dart';
 import 'package:medical_storage/views/menu_views/service_detail_page.dart';
 
 class ServicePage extends StatefulWidget {
@@ -262,18 +264,62 @@ class _ServicePageState extends State<ServicePage> {
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${_formatCurrency(service.price)} đ',
-                          style: const TextStyle(
-                            color: Colors.blueAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      SizedBox(width: 16),
+
+                      // Nội dung
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              service.name,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (service.description != null &&
+                                service.description!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6.0),
+                                child: Text(
+                                  service.description!,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ),
+                            SizedBox(height: 10),
+                            // Button
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          AppointmentPage(serviceName: service.name),
+                                    ),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Bạn đã chọn: ${service.name}')),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Đặt lịch',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -348,6 +394,14 @@ class _ServicePageState extends State<ServicePage> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: 1,
+        bottomNavType: BottomNavigationBarType.fixed,
+        onTap: (index) {
+
+        },
+        onNavTypeChanged: (_) {},
       ),
     );
   }
