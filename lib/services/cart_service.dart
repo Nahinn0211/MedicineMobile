@@ -4,6 +4,7 @@ import 'package:medical_storage/models/voucher.dart';
 import 'package:medical_storage/models/attribute.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'base_service.dart';
 import 'package:http/http.dart' as http;
 import '../models/medicine_media.dart';
@@ -116,7 +117,7 @@ class CartService extends ChangeNotifier {
   }
 
   Future<String> fetchMedicineImage(String medicineId) async {
-     const String baseUrl = 'http://192.168.1.249:8080/api';
+     const String baseUrl = 'http://192.168.1.250:8080/api';
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/medicines/$medicineId'),
