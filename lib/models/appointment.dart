@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:medical_storage/models/appointment_status.dart';
+import 'package:medical_storage/models/consultation.dart';
+import 'package:medical_storage/models/doctor_profile.dart';
+import 'package:medical_storage/models/patient_profile.dart';
+import 'package:medical_storage/models/prescription.dart';
+import 'package:medical_storage/models/service_booking.dart';
 
 class Appointment {
-  final int id;
-  final Map<String, dynamic>? patient;
-  final Map<String, dynamic>? serviceBooking;
-  final Map<String, dynamic>? doctor;
-  final Map<String, dynamic>? consultation;
+  final String id;
+  final PatientProfile? patient;
+  final ServiceBooking? serviceBooking;
+  final DoctorProfile? doctor;
+  final Consultation? consultation;
+  final List<Prescription> prescriptions;
   final String appointmentDate;
   final String appointmentTime;
-  final String status;
+  final AppointmentStatus status;
   final String? notes;
   final String createdAt;
   final String updatedAt;
@@ -20,6 +26,7 @@ class Appointment {
     this.serviceBooking,
     this.doctor,
     this.consultation,
+    required this.prescriptions,
     required this.appointmentDate,
     required this.appointmentTime,
     required this.status,
@@ -29,65 +36,124 @@ class Appointment {
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
-    return Appointment(
-      id: json['id'],
-      patient: json['patient'],
-      serviceBooking: json['serviceBooking'],
-      doctor: json['doctor'],
-      consultation: json['consultation'],
-      appointmentDate: json['appointmentDate'],
-      appointmentTime: json['appointmentTime'],
-      status: json['status'],
-      notes: json['notes'],
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
-    );
+    try {
+      // Xử lý status dưới dạng enum
+      AppointmentStatus statusEnum;
+      if (json['status'] != null) {
+        final statusString = json['status'].toString().toUpperCase();
+        statusEnum = AppointmentStatus.values.firstWhere(
+                (e) => e.toString().split('.').last == statusString,
+            orElse: () => AppointmentStatus.SCHEDULED // Giá trị mặc định
+        );
+      } else {
+        statusEnum = AppointmentStatus.SCHEDULED;
+      }
+
+      return Appointment(
+        id: json['id']?.toString() ?? '',
+
+        patient: json['patient'] != null && json['patient'] is Map<String, dynamic>
+            ? PatientProfile.fromJson(json['patient'] as Map<String, dynamic>)
+            : null,
+
+        doctor: json['doctor'] != null && json['doctor'] is Map<String, dynamic>
+            ? DoctorProfile.fromJson(json['doctor'] as Map<String, dynamic>)
+            : null,
+
+        serviceBooking: json['serviceBooking'] != null && json['serviceBooking'] is Map<String, dynamic>
+            ? ServiceBooking.fromJson(json['serviceBooking'] as Map<String, dynamic>)
+            : null,
+
+        consultation: json['consultation'] != null
+            ? (() {
+          try {
+            return Consultation.fromJson(json['consultation']);
+          } catch (e) {
+            print('Lỗi khi tạo Consultation: $e');
+            print('JSON gây lỗi: ${json['consultation']}');
+            return null;
+          }
+        })()
+            : null,
+
+        appointmentDate: json['appointmentDate']?.toString() ?? '',
+        appointmentTime: json['appointmentTime']?.toString() ?? '',
+
+        // Sử dụng enum thay vì string
+        status: statusEnum,
+
+        notes: json['notes']?.toString(),
+
+        // Handle prescription list with null safety
+        prescriptions: (json['prescriptions'] as List<dynamic>?)
+            ?.map((pres) => Prescription.fromJson(pres as Map<String, dynamic>))
+            .toList() ?? [],
+
+        createdAt: json['createdAt']?.toString() ?? '',
+        updatedAt: json['updatedAt']?.toString() ?? '',
+      );
+    } catch (e, stack) {
+      print('Error in Appointment.fromJson: $e');
+      print('Stack trace: $stack');
+      rethrow;
+    }
   }
 
-  // Getters for convenience
-  String get doctorName => doctor?['user']?['fullName'] ?? 'Unknown Doctor';
-  String get doctorSpecialty => doctor?['specialization'] ?? 'General';
-  String get doctorAvatar => doctor?['user']?['avatar'] ?? '';
-  String get serviceName => serviceBooking?['service']?['name'] ?? 'General Consultation';
-  double get price => (serviceBooking?['totalPrice'] ?? 0).toDouble();
-  bool get hasPrescription => false; // Add logic if the API provides this information
-  String get paymentMethod => serviceBooking?['paymentMethod'] ?? 'Unknown';
-  String get serviceDescription => serviceBooking?['service']?['description'] ?? '';
-  String get consultationLink => consultation?['consultationLink'] ?? '';
-  String get consultationStatus => consultation?['status'] ?? 'PENDING';
+  // Convert appointment to JSON for API requests
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'appointmentDate': appointmentDate,
+      'appointmentTime': appointmentTime,
+      'status': status,
+      'notes': notes,
+      // Only include non-null nested objects
+      if (patient != null) 'patientId': patient?.id,
+      if (doctor != null) 'doctorId': doctor?.id,
+      if (serviceBooking != null) 'serviceBookingId': serviceBooking?.id,
+      if (consultation != null) 'consultationId': consultation?.id,
+    };
+  }
 
-  AppointmentStatus getAppointmentStatus() {
-    switch (status.toLowerCase()) {
-      case 'scheduled':
-        return AppointmentStatus.SCHEDULED;
-      case 'completed':
-        return AppointmentStatus.COMPLETED;
-      case 'cancelled':
-        return AppointmentStatus.CANCELLED;
-      case 'pending':
-        return AppointmentStatus.PENDING;
-      default:
-      // Try to infer status from serviceBooking if available
-        if (serviceBooking != null) {
-          final bookingStatus = serviceBooking?['status']?.toLowerCase() ?? '';
-          if (bookingStatus == 'cancelled') {
-            return AppointmentStatus.CANCELLED;
-          } else if (bookingStatus == 'completed') {
-            return AppointmentStatus.COMPLETED;
-          } else if (bookingStatus == 'pending') {
-            return AppointmentStatus.PENDING;
-          }
-        }
-
-        // Default case if we can't determine status
-        return AppointmentStatus.SCHEDULED;
+  bool isUpcoming() {
+    try {
+      final now = DateTime.now();
+      final appointmentDateTime = _combineDateAndTime();
+      return appointmentDateTime.isAfter(now) &&
+          status == AppointmentStatus.SCHEDULED;
+    } catch (e) {
+      print('Error checking if appointment is upcoming: $e');
+      return false;
     }
+  }
+
+  AppointmentStatus getDisplayStatus() {
+    // Nếu trạng thái đã là COMPLETED hoặc CANCELLED, giữ nguyên
+    if (status == AppointmentStatus.COMPLETED ||
+        status == AppointmentStatus.CANCELLED) {
+      return status;
+    }
+
+    // Kiểm tra nếu cuộc hẹn SCHEDULED đã qua
+    final now = DateTime.now();
+    final appointmentDateTime = _combineDateAndTime();
+
+    if (status == AppointmentStatus.SCHEDULED &&
+        appointmentDateTime.isBefore(now)) {
+      // Cuộc hẹn đã qua nhưng chưa được cập nhật trạng thái
+      // Có thể hiển thị trong một tab riêng "Đã quá hạn" hoặc xử lý khác
+      return AppointmentStatus.PENDING; // Hoặc tạo enum mới OVERDUE
+    }
+
+    return status;
   }
 
   DateTime parseAppointmentDate() {
     try {
       return DateTime.parse(appointmentDate);
     } catch (e) {
+      // Log error for debugging purposes
+      print('Error parsing appointment date: $e');
       return DateTime.now();
     }
   }
@@ -95,30 +161,35 @@ class Appointment {
   TimeOfDay parseAppointmentTime() {
     try {
       final components = appointmentTime.split(':');
-      return TimeOfDay(
-        hour: int.parse(components[0]),
-        minute: int.parse(components[1]),
-      );
+      if (components.length >= 2) {
+        return TimeOfDay(
+          hour: int.parse(components[0]),
+          minute: int.parse(components[1]),
+        );
+      }
+      throw FormatException('Invalid time format');
     } catch (e) {
+      // Log error for debugging purposes
+      print('Error parsing appointment time: $e');
       return TimeOfDay.now();
     }
   }
 
-  bool isUpcoming() {
-    final now = DateTime.now();
-    final appointmentDateTime = DateTime.parse('$appointmentDate $appointmentTime');
-    return appointmentDateTime.isAfter(now) &&
-        status.toLowerCase() != 'cancelled' &&
-        status.toLowerCase() != 'completed';
-  }
-
-  bool isCompleted() {
-    return status.toLowerCase() == 'completed' ||
-        (serviceBooking != null && serviceBooking?['status']?.toLowerCase() == 'completed');
-  }
-
-  bool isCancelled() {
-    return status.toLowerCase() == 'cancelled' ||
-        (serviceBooking != null && serviceBooking?['status']?.toLowerCase() == 'cancelled');
+  // Helper method to combine date and time
+  DateTime _combineDateAndTime() {
+    try {
+      final date = parseAppointmentDate();
+      final time = parseAppointmentTime();
+      return DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    } catch (e) {
+      print('Error combining date and time: $e');
+      return DateTime.now();
+    }
   }
 }

@@ -24,9 +24,6 @@ class ServiceService extends BaseService<Service> {
 
       final response = await http.get(uri, headers: headers);
 
-      print('Mã trạng thái: ${response.statusCode}');
-      print('Phản hồi: ${response.body}');
-
       if (response.statusCode == 200) {
         // Giải mã UTF-8 từ phản hồi
         final String decodedBody = utf8.decode(response.bodyBytes);

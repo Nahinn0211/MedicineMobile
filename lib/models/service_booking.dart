@@ -7,7 +7,6 @@ import 'patient_profile.dart';
 
 class ServiceBooking extends BaseEntity {
   final Service service;
-  final PatientProfile patient;
   final double totalPrice;
   final PaymentMethod paymentMethod;
   final BookingStatus status;
@@ -20,7 +19,6 @@ class ServiceBooking extends BaseEntity {
     String? updatedBy,
     bool? isDeleted,
     required this.service,
-    required this.patient,
     required this.totalPrice,
     required this.paymentMethod,
     required this.status,
@@ -35,14 +33,13 @@ class ServiceBooking extends BaseEntity {
 
   factory ServiceBooking.fromJson(Map<String, dynamic> json) {
     return ServiceBooking(
-      id: json['id'],
+      id: json['id'] != null ? json['id'].toString() : '',
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       createdBy: json['createdBy'],
       updatedBy: json['updatedBy'],
       isDeleted: json['isDeleted'],
       service: Service.fromJson(json['service']),
-      patient: PatientProfile.fromJson(json['patient']),
       totalPrice: json['totalPrice'].toDouble(),
       paymentMethod: PaymentMethod.values.firstWhere(
             (e) => e.toString().split('.').last.toUpperCase() == json['paymentMethod'],
@@ -58,7 +55,6 @@ class ServiceBooking extends BaseEntity {
     final Map<String, dynamic> data = super.toJson();
     data.addAll({
       'service': service.toJson(),
-      'patient': patient.toJson(),
       'totalPrice': totalPrice,
       'paymentMethod': paymentMethod.toString().split('.').last.toUpperCase(),
       'status': status.toString().split('.').last.toUpperCase(),
@@ -74,7 +70,6 @@ class ServiceBooking extends BaseEntity {
     String? updatedBy,
     bool? isDeleted,
     Service? service,
-    PatientProfile? patient,
     double? totalPrice,
     PaymentMethod? paymentMethod,
     BookingStatus? status,
@@ -87,7 +82,6 @@ class ServiceBooking extends BaseEntity {
       updatedBy: updatedBy ?? this.updatedBy,
       isDeleted: isDeleted ?? this.isDeleted,
       service: service ?? this.service,
-      patient: patient ?? this.patient,
       totalPrice: totalPrice ?? this.totalPrice,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       status: status ?? this.status,

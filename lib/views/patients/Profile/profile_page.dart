@@ -5,6 +5,7 @@ import 'package:medical_storage/services/user_service.dart';
 import 'package:medical_storage/models/user.dart';
 import 'package:medical_storage/views/patients/Profile/account_view/deposit.dart';
 import 'package:medical_storage/views/patients/Profile/doncuatoi/order_page.dart';
+import 'package:medical_storage/views/patients/Profile/lichtuvan/appointment_page.dart';
 import 'package:medical_storage/widgets/HomeWidget/bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -172,14 +173,14 @@ class _ProfilePageState extends State<ProfilePage> {
               MaterialPageRoute(builder: (context) => OrderPage()),
             ),
           ),
-          // _buildAccountMenuItem(
-          //   Icons.calendar_month,
-          //   'Lịch tư vấn của tôi',
-          //       () => Navigator.push(
-          //     context,
-          //     MaterialPageRoute(builder: (context) => OrderPage()),
-          //   ),
-          // ),
+          _buildAccountMenuItem(
+            Icons.calendar_month,
+            'Lịch tư vấn của tôi',
+                () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AppointmentPage()),
+            ),
+          ),
         ],
       ),
     );
