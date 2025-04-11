@@ -1,6 +1,6 @@
 enum ConsultationStatus {
-  pending,
-  inProgress,
-  completed,
-  cancelled
+  PENDING,
+  IN_PROGRESS,
+  COMPLETED,
+  CANCELLED
 }

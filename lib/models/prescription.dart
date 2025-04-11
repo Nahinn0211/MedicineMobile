@@ -4,8 +4,6 @@ import 'patient_profile.dart';
 import 'medicine.dart';
 
 class Prescription extends BaseEntity {
-  final DoctorProfile doctor;
-  final PatientProfile patient;
   final Medicine medicine;
   final String dosage;
 
@@ -16,8 +14,6 @@ class Prescription extends BaseEntity {
     String? createdBy,
     String? updatedBy,
     bool? isDeleted,
-    required this.doctor,
-    required this.patient,
     required this.medicine,
     required this.dosage,
   }) : super(
@@ -31,14 +27,12 @@ class Prescription extends BaseEntity {
 
   factory Prescription.fromJson(Map<String, dynamic> json) {
     return Prescription(
-      id: json['id'],
+      id: json['id'] != null ? json['id'].toString() : '',
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       createdBy: json['createdBy'],
       updatedBy: json['updatedBy'],
       isDeleted: json['isDeleted'],
-      doctor: DoctorProfile.fromJson(json['doctor']),
-      patient: PatientProfile.fromJson(json['patient']),
       medicine: Medicine.fromJson(json['medicine']),
       dosage: json['dosage'],
     );
@@ -48,8 +42,6 @@ class Prescription extends BaseEntity {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
     data.addAll({
-      'doctor': doctor.toJson(),
-      'patient': patient.toJson(),
       'medicine': medicine.toJson(),
       'dosage': dosage,
     });
@@ -63,8 +55,6 @@ class Prescription extends BaseEntity {
     String? createdBy,
     String? updatedBy,
     bool? isDeleted,
-    DoctorProfile? doctor,
-    PatientProfile? patient,
     Medicine? medicine,
     String? dosage,
   }) {
@@ -75,8 +65,6 @@ class Prescription extends BaseEntity {
       createdBy: createdBy ?? this.createdBy,
       updatedBy: updatedBy ?? this.updatedBy,
       isDeleted: isDeleted ?? this.isDeleted,
-      doctor: doctor ?? this.doctor,
-      patient: patient ?? this.patient,
       medicine: medicine ?? this.medicine,
       dosage: dosage ?? this.dosage,
     );

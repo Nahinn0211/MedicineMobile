@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medical_storage/services/auth_service.dart';
-import 'package:medical_storage/views/menu_views/disease_views.dart';
 import 'package:medical_storage/views/menu_views/doctor_page.dart';
+
 import 'package:medical_storage/views/menu_views/health_supplements_page.dart';
-import 'package:medical_storage/views/menu_views/medicin_page.dart';
 
 class AppBarMenu extends StatefulWidget {
   const AppBarMenu({Key? key}) : super(key: key);
@@ -104,22 +103,6 @@ class _AppBarMenuState extends State<AppBarMenu> {
         ),
       ),
       _buildMenuItem(
-        icon: Icons.medication_liquid,
-        title: 'Thực phẩm chức năng',
-        onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => HealthSupplementPage())
-        ),
-      ),
-      _buildMenuItem(
-        icon: Icons.sick,
-        title: 'Bệnh',
-        onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => DiseasePage())
-        ),
-      ),
-      _buildMenuItem(
         icon: Icons.account_box,
         title: 'Bác sĩ',
         onTap: () => Navigator.push(
@@ -152,13 +135,8 @@ class _AppBarMenuState extends State<AppBarMenu> {
           ..._buildMenuItems(),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Thông báo'),
-            onTap: () {},
-          ),
-          ListTile(
             leading: const Icon(Icons.phone),
-            title: const Text('Hotline tư vấn: 1800 6928'),
+            title: const Text('Hotline tư vấn: 0969.325.914'),
             onTap: () {},
           ),
         ],

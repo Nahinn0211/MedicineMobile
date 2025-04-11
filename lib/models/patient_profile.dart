@@ -41,7 +41,7 @@ class PatientProfile extends BaseEntity {
 
   factory PatientProfile.fromJson(Map<String, dynamic> json) {
     return PatientProfile(
-      id: json['id']?.toString(), // Chuyển id sang string
+      id: json['id'] != null ? json['id'].toString() : '',
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       createdBy: json['createdBy']?.toString(),

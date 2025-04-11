@@ -6,6 +6,7 @@ import 'package:medical_storage/views/auth/forgot_password.dart';
 import 'package:medical_storage/views/auth/reset_password.dart';
 import 'package:medical_storage/views/auth/verify_code.dart';
 import 'package:medical_storage/views/patients/Profile/account_view/info_user.dart';
+import 'package:medical_storage/views/patients/Profile/lichtuvan/consultation_screen.dart';
 import 'package:medical_storage/views/patients/Profile/profile_page.dart';
 import 'package:medical_storage/views/patients/service_page.dart';
 import 'package:medical_storage/widgets/auth_guard.dart';
@@ -52,6 +53,16 @@ class MedicalStoreApp extends StatelessWidget {
         // '/address':(context)=> AddressManagementPage(),
         '/info-user' : (context) => PersonalInfoPage(),
         '/services' : (context) => ServicePage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/consultation') {
+          // Cast the arguments to the correct type
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => ConsultationScreen(args: args),
+          );
+        }
+        return null;
       },
     );
   }
