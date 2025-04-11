@@ -50,11 +50,13 @@ class Order extends BaseEntity {
       totalPrice: (json['totalPrice'] is int
           ? (json['totalPrice'] as int).toDouble()
           : json['totalPrice'] ?? 0.0).toDouble(),
-      paymentMethod: PaymentMethod.values.firstWhere(
+      paymentMethod: json['paymentMethod'] != null
+          ? (PaymentMethod.values.firstWhere(
             (e) => e.toString().split('.').last.toUpperCase() ==
-            (json['paymentMethod']?.toString().toUpperCase() ?? ''),
-        orElse: () => PaymentMethod.CASH, // Giá trị mặc định nếu không tìm thấy
-      ),
+            json['paymentMethod'].toString().toUpperCase(),
+        orElse: () => PaymentMethod.CASH,
+      ))
+          : PaymentMethod.CASH,
       status: OrderStatus.values.firstWhere(
             (e) => e.toString().split('.').last.toUpperCase() ==
             (json['status']?.toString().toUpperCase() ?? ''),

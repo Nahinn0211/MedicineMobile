@@ -10,6 +10,7 @@ import 'package:medical_storage/views/patients/payment_success.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import '../../models/payment_method.dart';
 import '../../services/user_service.dart';
 
 class PaymentMethodPage extends StatefulWidget {
@@ -37,7 +38,7 @@ class PaymentMethodPage extends StatefulWidget {
 }
 
 class _PaymentMethodPageState extends State<PaymentMethodPage> {
-  String _selectedPaymentMethod = "Tiền mặt";
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.CASH;
   final _payPalEmailController = TextEditingController();
   final _payPalPasswordController = TextEditingController();
   bool _isPayPalSelected = false;
@@ -84,7 +85,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
 
       // Tạo mã đơn hàng ngẫu nhiên
       final orderCode = 'ORD${DateTime.now().millisecondsSinceEpoch}';
-
+        print(_selectedPaymentMethod.toString().split('.').last);
       setState(() {
         _isLoading = true;
       });
@@ -94,7 +95,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         totalAmount: widget.totalAmount,
         orderCode: orderCode,
         discountAmount: widget.discountAmount,
-        paymentMethod: _selectedPaymentMethod,
+        paymentMethod: _selectedPaymentMethod.toString().split('.').last,
         note: widget.note,
       );
 
@@ -122,7 +123,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         Provider.of<CartService>(context, listen: false).clearCart();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Thanh toán thành công bằng $_selectedPaymentMethod")),
+          SnackBar(content: Text("Thanh toán thành công bằng ${_getPaymentMethodName(_selectedPaymentMethod)}")),
         );
 
         // Chuyển trang PaymentSuccessPage
@@ -131,7 +132,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
           MaterialPageRoute(
             builder: (context) => PaymentSuccessPage(
               orderId: orderId,
-              paymentMethod: _selectedPaymentMethod,
+              paymentMethod: _getPaymentMethodName(_selectedPaymentMethod),
             ),
           ),
         );
@@ -204,7 +205,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                           title: Text(item.medicine.name,
                               style: TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(
-                            "x${item.quantity} - ${_formatCurrency(item.totalPrice * item.quantity)}đ",
+                            "x${item.quantity} - ${_formatCurrency(item.attribute.priceOut * item.quantity)}đ",
                             style: TextStyle(color: Colors.grey[700]),
                           ),
                         ),
@@ -235,6 +236,19 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     );
   }
 
+  String _getPaymentMethodName(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.CASH:
+        return 'Tiền mặt';
+      case PaymentMethod.BALANCEACCOUNT:
+        return 'Ví THAVP';
+      case PaymentMethod.PAYPAL:
+        return 'PayPal';
+      default:
+        return method.toString().split('.').last;
+    }
+  }
+
   Widget _buildPaymentMethods() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,41 +256,40 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
         Text("Phương thức thanh toán",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        _buildPaymentOption("Tiền mặt", Icons.money),
-        _buildPaymentOption("Ví THAVP", Icons.account_balance_wallet),
-        _buildPaymentOption("PayPal", Icons.payment),
+        _buildPaymentOption("Tiền mặt", Icons.money, PaymentMethod.CASH),
+        _buildPaymentOption("Ví THAVP", Icons.account_balance_wallet, PaymentMethod.BALANCEACCOUNT),
+        _buildPaymentOption("PayPal", Icons.payment, PaymentMethod.PAYPAL),
       ],
     );
   }
 
-  void _onPaymentMethodChanged(String value) {
+  void _onPaymentMethodChanged(PaymentMethod value, String displayName) {
+    print('🔄 Phương thức thanh toán đã chọn: $value (${displayName})');
     setState(() {
       _selectedPaymentMethod = value;
-      _isPayPalSelected = value == "PayPal";
+      _isPayPalSelected = value == PaymentMethod.PAYPAL;
     });
 
-    if (value == "PayPal") {
+    if (value == PaymentMethod.PAYPAL) {
       Future.delayed(Duration(milliseconds: 300), () {
         if (mounted) _payWithPayPal();
       });
     }
   }
 
-  Widget _buildPaymentOption(String method, IconData icon) {
+  Widget _buildPaymentOption(String displayName, IconData icon, PaymentMethod method) {
     return ListTile(
       leading: Icon(icon, color: Colors.blue),
-      title: Text(method),
-      trailing: Radio<String>(
+      title: Text(displayName),
+      trailing: Radio<PaymentMethod>(
         value: method,
         groupValue: _selectedPaymentMethod,
         onChanged: (value) {
-          if (value != null) _onPaymentMethodChanged(value);
+          if (value != null) _onPaymentMethodChanged(value, displayName);
         },
       ),
     );
   }
-
-
 
   Widget _buildTotalAmount() {
     return Container(
@@ -344,54 +357,52 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     if (!mounted) return; // Kiểm tra widget trước khi gọi navigator
 
     Navigator.of(context).push(
-      MaterialPageRoute(
+        MaterialPageRoute(
         builder: (context) => UsePaypal(
-          sandboxMode: true,
-          clientId: "AZRIOnH-KUdZlGg1WLegmKjjdZKdMkHEHH31IgbtNPfuLHGzVbeQdaFpAfCcK67upsdnnQHThuERJmla",
-          secretKey: "EEI_MYEmIAXL3IoUyVVI4cBRbvpEOeqRHTfbMslqObH8zK53bCbA3OM9JHzUrVU2sj9tyJ8TVjFWPxq7",
-          returnURL: "https://medicinemedical.com/success",
-          cancelURL: "https://example.com/cancel",
+        sandboxMode: true,
+        clientId: "AZRIOnH-KUdZlGg1WLegmKjjdZKdMkHEHH31IgbtNPfuLHGzVbeQdaFpAfCcK67upsdnnQHThuERJmla",
+        secretKey: "EEI_MYEmIAXL3IoUyVVI4cBRbvpEOeqRHTfbMslqObH8zK53bCbA3OM9JHzUrVU2sj9tyJ8TVjFWPxq7",
+        returnURL: "https://medicinemedical.com/success",
+        cancelURL: "https://example.com/cancel",
 
-          transactions: [
-            {
-              "amount": {
-                "total": totalInUSD.toStringAsFixed(2),
-                "currency": "USD",
-                "details": {
-                  "subtotal": totalInUSD.toStringAsFixed(2),
-                  "shipping": "0",
-                  "handling_fee": "0",
-                  "tax": "0",
-                  "shipping_discount": "0"
-                }
-              },
-              "description": "Thanh toán đơn hàng (VNĐ: ${widget.totalAmount})",
-            }
-          ],
-          note: "Cảm ơn bạn đã mua hàng!",
-          onSuccess: (Map params) async {
-            if (!context.mounted) return;
-            print("✅ Thanh toán thành công: $params");
+        transactions: [
+        {
+        "amount": {
+        "total": totalInUSD.toStringAsFixed(2),
+        "currency": "USD",
+        "details": {
+        "subtotal": totalInUSD.toStringAsFixed(2),
+        "shipping": "0",
+        "handling_fee": "0",
+        "tax": "0",
+        "shipping_discount": "0"
+        }
+        },
+        "description": "Thanh toán đơn hàng (VNĐ: ${widget.totalAmount})",
+        }
+        ],
+        note: "Cảm ơn bạn đã mua hàng!",
+        onSuccess: (Map params) async {
+      if (!context.mounted) return;
+      print("✅ Thanh toán thành công: $params");
 
-            Navigator.pop(context); // Đóng trang PayPal trước khi xử lý
+      Navigator.pop(context); // Đóng trang PayPal trước khi xử lý
 
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Thanh toán PayPal thành công!")),
-              );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Thanh toán PayPal thành công!")),
+        );
 
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PaymentSuccessPage(
-                    orderId: params["order_id"]?.toString() ?? "N/A",
-                  ),
-                ),
-              );
-            });
-          },
-
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+            builder: (context) => PaymentSuccessPage(
+            orderId: params["order_id"]?.toString() ?? "N/A"),
+        ),
+        );
+      });
+        },
 
           onCancel: (Map params) {
             if (!context.mounted) return;
@@ -407,7 +418,6 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             });
           },
 
-
           onError: (error) {
             if (!context.mounted) return;
             print("❌ Lỗi thanh toán: $error");
@@ -421,12 +431,10 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               );
             });
           },
-
         ),
-      ),
+        ),
     );
   }
-
 
   Widget _buildPayPalForm() {
     return Padding(
@@ -459,6 +467,25 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
     );
   }
 
+  PaymentMethod getPaymentMethodFromString(String value) {
+    switch (value.toUpperCase()) {
+      case 'CASH':
+      case 'TIỀN MẶT':
+        return PaymentMethod.CASH;
+      case 'BALANCEACCOUNT':
+      case 'VÍ THAVP':
+        return PaymentMethod.BALANCEACCOUNT;
+      case 'PAYPAL':
+        return PaymentMethod.PAYPAL;
+      default:
+        return PaymentMethod.CASH; // Giá trị mặc định
+    }
+  }
 
-
+  @override
+  void dispose() {
+    _payPalEmailController.dispose();
+    _payPalPasswordController.dispose();
+    super.dispose();
+  }
 }
