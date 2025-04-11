@@ -29,7 +29,7 @@ class OrderService extends BaseService<Order> {
         "medicineId": item.medicine.id,
         "attributeId": item.attribute.id ?? null,
         "quantity": item.quantity,
-        "unitPrice": item.totalPrice,
+        "unitPrice": item.attribute.priceOut,
       };
 
       print('📦 Order Details JSON gửi lên: ${jsonEncode(orderDetail)}');
@@ -209,6 +209,7 @@ class OrderService extends BaseService<Order> {
       }
 
       final paymentMethodEnum = _parsePaymentMethod(paymentMethod);
+      print(paymentMethodEnum);
       final statusEnum = _parseStatus("PENDING");
 
       final orderData = new Order(patientId: patientId, paymentMethod: paymentMethodEnum, totalPrice: totalAmount, discountAmount: discountAmount, voucherCode: voucher?.code, status: statusEnum, orderCode: orderCode);
@@ -303,11 +304,11 @@ class OrderService extends BaseService<Order> {
   }
   PaymentMethod _parsePaymentMethod(String method) {
     switch (method) {
-      case "Tiền mặt":
+      case "CASH":
         return PaymentMethod.CASH;
-      case "Ví THAVP":
+      case "BALANCEACCOUNT":
         return PaymentMethod.BALANCEACCOUNT;
-      case "PayPal":
+      case "PAYPAL":
         return PaymentMethod.PAYPAL;
       default:
         return PaymentMethod.CASH;

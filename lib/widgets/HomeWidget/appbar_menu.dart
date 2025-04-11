@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medical_storage/services/auth_service.dart';
 import 'package:medical_storage/views/menu_views/doctor_page.dart';
-import 'package:medical_storage/views/menu_views/medicin_page.dart';
+
+import 'package:medical_storage/views/menu_views/health_supplements_page.dart';
 
 class AppBarMenu extends StatefulWidget {
   const AppBarMenu({Key? key}) : super(key: key);
