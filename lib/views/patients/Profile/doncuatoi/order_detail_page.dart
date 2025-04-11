@@ -49,6 +49,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       // Xử lý kết quả đơn hàng
       if (orderResponse['success']) {
         _order = orderResponse['order'];
+        print(_order?.paymentMethod.toString());
       } else {
         _setError('Lỗi lấy thông tin đơn hàng: ${orderResponse['message']}');
         return;
@@ -276,6 +277,21 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         ],
       ),
     );
+  }String _getPaymentMethodName(PaymentMethod? method) {
+    if (method == null) return 'N/A';
+
+    print('Phương thức thanh toán: $method'); // Thêm dòng này để debug
+
+    switch (method) {
+      case PaymentMethod.CASH:
+        return 'Tiền mặt';
+      case PaymentMethod.BALANCEACCOUNT:
+        return 'Ví THAVP';
+      case PaymentMethod.PAYPAL:
+        return 'PayPal';
+      default:
+        return method.toString().split('.').last;
+    }
   }
 
   Widget _buildOrderSummaryCard() {
@@ -299,7 +315,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             ),
             _buildInfoRow(
                 'Phương Thức Thanh Toán',
-                _order?.paymentMethod.toString().split('.').last.toUpperCase() ?? 'N/A',
+                _getPaymentMethodName(_order?.paymentMethod),
                 Icons.payment
             ),
           ],
@@ -487,13 +503,13 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         break;
       case PaymentMethod.PAYPAL:
         paymentIcon = Icons.paypal;
-        paymentTitle = 'Chuyển khoản qua Paypal';
-        paymentDesc = 'Đã thanh toán qua chuyển khoản Paypal';
+        paymentTitle = 'Thanh toán qua PayPal';
+        paymentDesc = 'Đã thanh toán qua PayPal';
         break;
       case PaymentMethod.BALANCEACCOUNT:
-        paymentIcon = Icons.credit_card;
-        paymentTitle = 'Thẻ THAPV';
-        paymentDesc = 'Đã thanh toán bằng thẻ THAPV';
+        paymentIcon = Icons.account_balance_wallet;
+        paymentTitle = 'Thanh toán qua Ví THAVP';
+        paymentDesc = 'Đã thanh toán bằng Ví THAVP';
         break;
       default:
         paymentIcon = Icons.payment;
