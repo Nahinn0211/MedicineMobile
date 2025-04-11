@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medical_storage/services/service_service.dart';
 import 'package:medical_storage/models/service.dart';
-
+import '../../widgets/HomeWidget/bottom_bar.dart';
 import 'appointment_page.dart';
 
 class ServicePage extends StatelessWidget {
@@ -70,7 +70,8 @@ class ServicePage extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            if (service.description != null && service.description!.isNotEmpty)
+                            if (service.description != null &&
+                                service.description!.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(top: 6.0),
                                 child: Text(
@@ -86,12 +87,12 @@ class ServicePage extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                // Trong ServicePage, tại phần onPressed của nút "Đặt lịch"
                                 onPressed: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => AppointmentPage(serviceName: service.name),
+                                      builder: (context) =>
+                                          AppointmentPage(serviceName: service.name),
                                     ),
                                   );
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -104,9 +105,10 @@ class ServicePage extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                 ),
-                                child:
-                                Text('Đặt lịch',
-                                style: TextStyle(color: Colors.black),),
+                                child: Text(
+                                  'Đặt lịch',
+                                  style: TextStyle(color: Colors.black),
+                                ),
                               ),
                             ),
                           ],
@@ -119,6 +121,14 @@ class ServicePage extends StatelessWidget {
             },
           );
         },
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        selectedIndex: 1,
+        bottomNavType: BottomNavigationBarType.fixed,
+        onTap: (index) {
+
+        },
+        onNavTypeChanged: (_) {},
       ),
     );
   }

@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:medical_storage/models/patient_profile.dart';
 import 'package:medical_storage/models/user.dart';
+import 'package:provider/provider.dart';
+import '../../../../provider/user_provider.dart';
 import '../../../../services/user_service.dart';
 import 'edit_profile.dart';
 
@@ -181,6 +183,10 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
           _patientProfile = userData;
           _isLoading = false;
         });
+
+        // ✅ Thêm đoạn này để lưu vào Provider
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUser(userData!.user);
       }
     } catch (e) {
       if (mounted) {
@@ -192,6 +198,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
       print('❌ Lỗi tải profile: $e');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

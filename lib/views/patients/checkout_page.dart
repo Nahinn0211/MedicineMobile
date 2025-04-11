@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:medical_storage/views/patients/payment_method_page.dart';
+import 'package:provider/provider.dart';
 import '../../models/voucher.dart'; // Đổi từ discount.dart sang voucher.dart
+import '../../provider/user_provider.dart';
 import '../../services/cart_service.dart';
 import 'add_address_page.dart';
 import 'voucher_page.dart';
@@ -16,13 +18,12 @@ class CheckoutPage extends StatefulWidget {
   State<CheckoutPage> createState() => _CheckoutPageState();
 }
 
+
 class _CheckoutPageState extends State<CheckoutPage> {
+
   String _formatCurrency(double amount) {
     return amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.');
   }
-
-  Map<String, String>? _selectedAddress;
-
   Voucher? _selectedVoucher;
   String? _selectedVoucherCode;
   double _discountAmount = 0;
@@ -135,7 +136,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             _buildDeliveryMethodSection(context),
             SizedBox(height: 12),
-            _buildAddressSection(),
+            _buildUserInfoSection(),
             SizedBox(height: 12),
             _buildNoteInput(),
             SizedBox(height: 12),
@@ -165,42 +166,51 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildAddressSection() {
+  Widget _buildUserInfoSection() {
+    final userProvider = Provider.of<UserProvider>(context);
+    final user = userProvider.user;
+
+    if (user == null) {
+      return Text("Không thể tải thông tin người dùng.");
+    }
+
     return Container(
-      padding: EdgeInsets.all(12),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Giao hàng tới", style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () async {
-              final newAddress = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddAddressPage(existingAddress: _selectedAddress)),
-              );
-              if (newAddress != null) {
-                setState(() {
-                  _selectedAddress = newAddress;
-                });
-              }
-            },
-            child: Text(_selectedAddress == null ? "Thêm địa chỉ" : "Thay đổi địa chỉ"),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 6,
+            offset: Offset(0, 3),
           ),
-          if (_selectedAddress != null) ...[
-            SizedBox(height: 8),
-            Text("Người nhận: ${_selectedAddress!['name']}"),
-            Text("SĐT: ${_selectedAddress!['phone']}"),
-            Text("Địa chỉ: ${_selectedAddress!['address']}"),
-          ],
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_on, color: Colors.blue, size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.fullName ?? '', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                SizedBox(height: 4),
+                Text("SĐT: ${user.phone ?? ''}", style: TextStyle(color: Colors.black87)),
+                SizedBox(height: 2),
+                Text("Địa chỉ: ${user.address ?? ''}", style: TextStyle(color: Colors.black87)),
+                SizedBox(height: 2),
+                Text("Email: ${user.email ?? ''}", style: TextStyle(color: Colors.black87)),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+
 
   Widget _buildNoteInput() {
     return TextField(
@@ -371,12 +381,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _buildCheckoutButton(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
-        if (_selectedDeliveryMethod == "Giao hàng tận nơi" && _selectedAddress == null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Vui lòng thêm địa chỉ giao hàng"),
-            duration: Duration(seconds: 2),
-          ));
-          return;
+        final user = Provider.of<UserProvider>(context, listen: false).user;
+
+        if (_selectedDeliveryMethod == "Giao hàng tận nơi") {
+          if (user?.address == null || user!.address!.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text("Vui lòng thêm địa chỉ giao hàng"),
+              duration: Duration(seconds: 2),
+            ));
+            return;
+          }
         }
 
         double totalAmount = _calculateTotal();
@@ -389,10 +403,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
               cartItems: widget.cartItems,
               totalAmount: finalAmount,
               discountAmount: _discountAmount,
-              address: _selectedAddress,
+              address: {
+                'name': user?.fullName ?? '',
+                'phone': user?.phone ?? '',
+                'address': user?.address ?? '',
+                'email': user?.email ?? '',
+              },
               deliveryMethod: _selectedDeliveryMethod,
               note: _noteController.text,
-              voucher: _selectedVoucher, // truyền voucher
+              voucher: _selectedVoucher,
             ),
           ),
         );

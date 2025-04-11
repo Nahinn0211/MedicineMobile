@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:medical_storage/provider/user_provider.dart';
 import 'package:medical_storage/services/cart_service.dart';
 import 'package:medical_storage/services/user_service.dart';
 import 'package:medical_storage/views/auth/forgot_password.dart';
@@ -23,6 +24,7 @@ void main() async {
       providers: [
         Provider<UserService>(create: (_)=> UserService()),
         ChangeNotifierProvider(create: (_) => CartService()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: MedicalStoreApp(),  // Dùng MedicalStoreApp duy nhất
     ),
